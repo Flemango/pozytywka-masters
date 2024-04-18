@@ -3,9 +3,18 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home  from './pages/Home';
 import NoPage  from './pages/NoPage';
 import Reservation from './pages/Reservation';
-import AdminPanel from './pages/AdminPanel';
+import AdminLogin from './pages/AdminLogin';
 
 function App() {
+
+  const [backendData, setBackendData] = useState({ users: [] }); // Initialize as an object with an empty "users" array
+
+  useEffect(() => {
+    fetch("/users")
+      .then((response) => response.json())
+      .then((data) => setBackendData(data))
+      .catch((error) => console.error('Error fetching data:', error)); // Add error handling
+  }, []);
 
   return (
     <div>
@@ -15,33 +24,24 @@ function App() {
           <Route index element={<Home/>} />
           <Route path="/home" element={<Home/>} />
           <Route path="/reservation" element={<Reservation/>} />
-          <Route path="/adminpanel" element={<AdminPanel/>} />
+          <Route path="/admin" element={<AdminLogin/>} />
         </Routes>
       </BrowserRouter>
+
+      {(
+        backendData.users.map((user, index) => (
+          <React.Fragment key={user}>
+            {user}
+            {index !== backendData.users.length - 1 && <br/>}
+          </React.Fragment>
+        ))
+      )}
     </div>
   );
 
 
-  // const [backendData, setBackendData] = useState({ users: [] }); // Initialize as an object with an empty "users" array
-
-  // useEffect(() => {
-  //   fetch("/api")
-  //     .then((response) => response.json())
-  //     .then((data) => setBackendData(data))
-  //     .catch((error) => console.error('Error fetching data:', error)); // Add error handling
-  // }, []);
-
   // return (
-  //   <div>
-  //     {(
-  //       backendData.users.map((user, index) => (
-  //         <React.Fragment key={user}>
-  //           {user}
-  //           {index !== backendData.users.length - 1 && <br/>}
-  //         </React.Fragment>
-  //       ))
-  //     )}
-  //   </div>
+    
   // );
 }
 
