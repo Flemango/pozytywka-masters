@@ -1,0 +1,18 @@
+# POST http://localhost:5000/admin
+# Content-Type: application/json
+
+# {
+#   "password": "password"
+# }
+
+GET http://localhost:5000/password
+
+
+###
+
+POST http://localhost:5000/admin
+Content-Type: application/json
+
+{
+  "password": "burrito123"
+}

@@ -1,33 +1,42 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import Axios from 'axios';
 
 export default function Home() {
+  const navigate = useNavigate()
+
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
-      const response = Axios.post('http://localhost:5000/admin', {
-        password: 'password'
+      Axios.post('http://localhost:5000/admin', {
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value
+      })
+      .then(response => { console.log(response.status)
+        if (response.status===200) {
+          // useEffect(() => {
+          //   fetch("/users")
+          //     .then((response) => response.json())
+          //     .then((data) => setBackendData(data))
+          //     .catch((error) => console.error('Error fetching data:', error)); // Add error handling
+          // }, []); 
+        }
+          //navigate('/panel')
+      })
+      .catch(error => {
+        if (error.response.status===401) setMessage("Invalid password.")
+        else {
+          setMessage("Unknown Error. Try again")
+          console.error('Error:', error)
+        }
       });
-      console.log(response);
-      /*await fetch('http://localhost:5000/admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: {"password": "password"}
-      });*/
-      
-    //   const data = await response.json();
-    
-    //   if (data.success) {
-    //     setMessage('Login successful');
-    //   } else {
-    //     setMessage('Invalid password');
-    //   }
+
     } catch (error) {
       console.error('Error:', error);
     }
@@ -37,9 +46,17 @@ export default function Home() {
     <div className="App">
       <form onSubmit={handleSubmit}>
         <label>
+        Username:
+          <input
+            type="username"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          /><br/>
           Password:
           <input
             type="password"
+            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

@@ -4,6 +4,8 @@ import Home  from './pages/Home';
 import NoPage  from './pages/NoPage';
 import Reservation from './pages/Reservation';
 import AdminLogin from './pages/AdminLogin';
+import AdminPanel from './pages/AdminPanel';
+
 
 function App() {
 
@@ -14,7 +16,7 @@ function App() {
       .then((response) => response.json())
       .then((data) => setBackendData(data))
       .catch((error) => console.error('Error fetching data:', error)); // Add error handling
-  }, []);
+  }, []); 
 
   return (
     <div>
@@ -25,6 +27,7 @@ function App() {
           <Route path="/home" element={<Home/>} />
           <Route path="/reservation" element={<Reservation/>} />
           <Route path="/admin" element={<AdminLogin/>} />
+          <Route path="/panel" element={<AdminLogin/>} />
         </Routes>
       </BrowserRouter>
 
