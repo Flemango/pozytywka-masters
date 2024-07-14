@@ -5,7 +5,10 @@ import NoPage from './pages/NoPage';
 import Reservation from './pages/Reservation';
 import AdminLogin from './pages/AdminLogin';
 import AdminPanel from './pages/AdminPanel';
-import Navbar from './components/Navbar'; // Import Navbar component
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+
+import './App.css';
 
 function App() {
   const [backendData, setBackendData] = useState({ users: [] });
@@ -21,25 +24,26 @@ function App() {
     <div>
       <BrowserRouter>
         <Navbar /> {/* Add Navbar component */}
-        <Routes>
-          <Route path="*" element={<NoPage />} />
-          <Route index element={<Home />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/reservation" element={<Reservation />} />
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route path="/panel" element={<AdminPanel />} />
-        </Routes>
+        <div className="content" id="content">
+          <Routes>
+            <Route path="*" element={<NoPage />} />
+            <Route index element={<Home />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/reservation" element={<Reservation />} />
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/panel" element={<AdminPanel />} />
+          </Routes>
+        </div>
       </BrowserRouter>
-
       {backendData.users.map((user, index) => (
         <React.Fragment key={index}>
           {user}
           {index !== backendData.users.length - 1 && <br />}
         </React.Fragment>
       ))}
+      <Footer />
     </div>
   );
 }
 
 export default App;
-//tggg
