@@ -1,9 +1,11 @@
 // src/pages/Home.js
 import React, { useContext } from 'react';
 import { LanguageContext } from '../context/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
   const { language } = useContext(LanguageContext);
+  const navigate = useNavigate();
 
   const translations = {
     EN: {
@@ -22,7 +24,7 @@ export default function Home() {
     <div>
       <h1>{translations[language].welcome}</h1>
       <p>{translations[language].description}</p>
-      <button className="home-button">{translations[language].button}</button>
+      <button className="home-button" onClick={() => {navigate('/services');}}>{translations[language].button}</button>
     </div>
   );
 }

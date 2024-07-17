@@ -1,9 +1,11 @@
+import React from 'react';
+import ReservationPanel from '../components/ReservationPanel';
 
-
-export default function Home() {
-    return (
-        <>
-            <h2>Reservations Panel</h2>
-        </>
-    )
+export default function Reservation() {
+  return (
+    <>
+      <ReservationPanel />
+    </>
+  );
 }
+

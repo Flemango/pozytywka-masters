@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import Axios from 'axios';
+import '../components/ReservationPanel.css';
 
 export default function Home() {
   const navigate = useNavigate()
@@ -43,8 +44,8 @@ export default function Home() {
   };
 
   return (
-    <div className="App">
-      <form onSubmit={handleSubmit}>
+    <div className="login-container">
+      <form className="login-form" onSubmit={handleSubmit}>
         <label>
         Username:
           <input
@@ -63,7 +64,7 @@ export default function Home() {
         </label>
         <button type="submit">Login</button>
       </form>
-      <p>{message}</p>
+      <p className="login-message">{message}</p>
     </div>
   );
 }
