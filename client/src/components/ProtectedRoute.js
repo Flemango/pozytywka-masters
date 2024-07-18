@@ -26,7 +26,6 @@ const ProtectedRoute = ({ element: Component }) => {
         }
       } catch (error) {
         setIsAuthenticated(false);
-        navigate('/');
       } finally {
         setLoading(false);
       }

@@ -5,8 +5,7 @@
 #   "password": "password"
 # }
 
-GET http://localhost:5000/password
-
+GET http://localhost:5000/panel
 
 ###
 
@@ -14,5 +13,6 @@ POST http://localhost:5000/admin
 Content-Type: application/json
 
 {
+  "username": "Kyle",
   "password": "burrito123"
 }

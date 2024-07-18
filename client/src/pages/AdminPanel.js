@@ -10,23 +10,25 @@ const AdminPanel = () => {
   useEffect(() => {
     let interval;
 
-    if (accessToken) {
-      interval = setInterval(async () => {
-        try {
-          const response = await Axios.post(
-            'http://localhost:5000/refresh',
-            {},
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-          );
+    const refreshAccessToken = async () => {
+      try {
+        const response = await Axios.post(
+          'http://localhost:5000/refresh',
+          {},
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
 
-          setAccessToken(response.data.accessToken);
-          localStorage.setItem('accessToken', response.data.accessToken);
-        } catch (error) {
-          setAccessToken('');
-          localStorage.removeItem('accessToken');
-          navigate('/');
-        }
-      }, 5000); // Refresh every 5 seconds
+        setAccessToken(response.data.accessToken);
+        localStorage.setItem('accessToken', response.data.accessToken);
+      } catch (error) {
+        setAccessToken('');
+        localStorage.removeItem('accessToken');
+        navigate('/');
+      }
+    };
+
+    if (accessToken) {
+      interval = setInterval(refreshAccessToken, 5000); // Refresh every 5 seconds
     }
 
     return () => clearInterval(interval);
@@ -44,7 +46,9 @@ const AdminPanel = () => {
       }
     };
 
-    fetchData();
+    if (accessToken) {
+      fetchData();
+    }
   }, [accessToken, navigate]);
 
   return (
