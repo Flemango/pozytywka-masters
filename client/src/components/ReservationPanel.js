@@ -14,7 +14,7 @@ function ReservationPanel() {
 
   const translations = {
     EN: {
-      title: 'Reserve a Date',
+      title: 'Reserve an Appointment',
       firstName: 'First Name',
       lastName: 'Last Name',
       email: 'Email',

@@ -1,8 +1,58 @@
+import React, { useEffect, useState } from 'react';
+import Axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-export default function AdminPanel() {
-    return (
-        <>
-            <h2>AdminPanel</h2>
-        </>
-    )
-}
+const AdminPanel = () => {
+  const navigate = useNavigate();
+  const [message, setMessage] = useState('');
+  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
+
+  useEffect(() => {
+    let interval;
+
+    if (accessToken) {
+      interval = setInterval(async () => {
+        try {
+          const response = await Axios.post(
+            'http://localhost:5000/refresh',
+            {},
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+
+          setAccessToken(response.data.accessToken);
+          localStorage.setItem('accessToken', response.data.accessToken);
+        } catch (error) {
+          setAccessToken('');
+          localStorage.removeItem('accessToken');
+          navigate('/');
+        }
+      }, 5000); // Refresh every 5 seconds
+    }
+
+    return () => clearInterval(interval);
+  }, [accessToken, navigate]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await Axios.get('http://localhost:5000/panel', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        setMessage(response.data.message);
+      } catch (error) {
+        navigate('/');
+      }
+    };
+
+    fetchData();
+  }, [accessToken, navigate]);
+
+  return (
+    <div>
+      <h1>Admin Panel</h1>
+      <p>{message}</p>
+    </div>
+  );
+};
+
+export default AdminPanel;

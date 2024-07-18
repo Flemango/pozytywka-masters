@@ -7,6 +7,7 @@ import './App.css';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import Home from './pages/Home';
 import NoPage from './pages/NoPage';
@@ -14,6 +15,7 @@ import Reservation from './pages/Reservation';
 import AdminLogin from './pages/AdminLogin';
 import AdminPanel from './pages/AdminPanel';
 import Services from './pages/Services';
+import Contact from './pages/Contact';
 
 function App() {
   const [backendData, setBackendData] = useState({ users: [] });
@@ -34,12 +36,14 @@ function App() {
             <Routes>
               <Route path="*" element={<NoPage />} />
               <Route index element={<Home />} />
+              <Route path="/" element={<Home />} />
               <Route path="/home" element={<Home />} />
               <Route path="/reservation" element={<Reservation />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/contact" element={<Contact />} />
 
               <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/panel" element={<AdminPanel />} />
+              <Route path="/panel" element={<ProtectedRoute element={AdminPanel} />} />
             </Routes>
           </div>
         </BrowserRouter>
