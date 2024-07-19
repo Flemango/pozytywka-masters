@@ -38,7 +38,7 @@ const ProtectedRoute = ({ element: Component }) => {
     return <div>Loading...</div>;
   }
 
-  return isAuthenticated ? <Component /> : null;
+  return isAuthenticated ? <Component /> : navigate('/paneI');
 };
 
 export default ProtectedRoute;

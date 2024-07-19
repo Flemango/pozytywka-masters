@@ -4,7 +4,7 @@ import './Footer.css';
 function Footer() {
   return (
     <footer className="footer">
-      <p>&copy; lorem ipsum</p>
+      <p>&copy; 2024 lorem ipsum</p>
     </footer>
   );
 }

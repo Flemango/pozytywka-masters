@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Axios from 'axios';
-import '../components/ReservationPanel.css';
+import '../components/SubmitForms.css';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -33,8 +33,8 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="login-container">
-      <form className="login-form" onSubmit={handleSubmit}>
+    <div className="admin-login-container">
+      <form className="admin-login-form" onSubmit={handleSubmit}>
         <label>
           Username:
           <input
@@ -54,7 +54,7 @@ export default function AdminLogin() {
         </label>
         <button type="submit">Login</button>
       </form>
-      <p className="login-message">{message}</p>
+      <p className="admin-login-message">{message}</p>
     </div>
   );
 }

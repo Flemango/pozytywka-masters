@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import './ReservationPanel.css';
+import './SubmitForms.css';
 import { LanguageContext } from '../context/LanguageContext';
 
 function ReservationPanel() {
