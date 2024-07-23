@@ -68,11 +68,13 @@
   display: none;
 }
 
-.language-toggle {
+.language-toggle, .login-button {
   background-color: white;
   color: #4CAF50;
   border: none;
   padding: 0.5rem 1rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
   font-size: 1rem;
   cursor: pointer;
   border-radius: 5px;
@@ -81,14 +83,21 @@
   display: flex; /* Use flexbox for centering */
   justify-content: center; /* Center the content */
   align-items: center; /* Center the content vertically */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Light shadow */
+  text-decoration: none;
 }
 
-.language-toggle:hover {
-  background-color: #ddd;
+.login-button {
+  height: 18.4px;
+}
+
+.language-toggle:hover, .login-button:hover {
+  scale: 101%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow on hover */
 }
 
 @media (max-width: 768px) {
-  .language-toggle {
+  .language-toggle, .login-button {
     display: none;
   }
 
@@ -115,7 +124,7 @@
   }
 
   .navbar-menu-container.open {
-    max-height: 300px; /* Adjust based on the number of menu items */
+    max-height: 324px; /* Adjust based on the number of menu items */
   }
 
   .navbar-menu-mobile {

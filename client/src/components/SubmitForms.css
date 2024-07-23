@@ -152,3 +152,15 @@
     width: 20px;
     border-radius: 5px;
   }
+
+  .reservation-page {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.reservation-column, .calendar-column {
+  flex: 1;
+}
+

@@ -1,0 +1,50 @@
+/* src/components/ReservationCalendar.css */
+.react-calendar {
+  width: 350px;
+  max-width: 100%;
+  background: white;
+  border: 1px solid #a0a096;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  margin-top: 2rem;
+}
+
+.react-calendar__tile--disabled {
+  background-color: #f0f0f0 !important;
+  color: #ccc !important;
+}
+
+.available-times {
+  margin-top: 20px;
+  max-width: 328.4px; /* Ensuring the grid does not exceed the width of the calendar */
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.available-times h3 {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.available-times ul {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 columns to fit the calendar width */
+  gap: 10px;
+  list-style-type: none;
+  padding: 0;
+}
+
+.available-times li {
+  background: #4CAF50; /* Green background */
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-align: center;
+  color: white; /* White text for better contrast */
+}
+
+.available-times li:hover {
+  background-color: #45a049;
+}

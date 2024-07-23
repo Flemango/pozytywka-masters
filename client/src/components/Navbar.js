@@ -27,9 +27,9 @@ function Navbar() {
           <li><Link to="/reservation" className={location.pathname === '/reservation' ? 'current' : ''}>{translations[language].reservation}</Link></li>
           <li><Link to="/services" className={location.pathname === '/services' ? 'current' : ''}>{translations[language].services}</Link></li>
           <li><Link to="/contact" className={location.pathname === '/contact' ? 'current' : ''}>{translations[language].contact}</Link></li>
-          <li><Link to="/login" className={location.pathname === '/login' ? 'current' : ''}>{translations[language].login}</Link></li>
         </ul>
       </div>
+      <Link to="/login" className={`login-button ${location.pathname === '/login' ? 'current' : ''}`}>{translations[language].login}</Link>
       <button className="language-toggle" onClick={toggleLanguage}>
         {language}
       </button>
@@ -42,6 +42,7 @@ function Navbar() {
           <li><Link to="/reservation" className={location.pathname === '/reservation' ? 'current' : ''}>{translations[language].reservation}</Link></li>
           <li><Link to="/services" className={location.pathname === '/services' ? 'current' : ''}>{translations[language].services}</Link></li>
           <li><Link to="/contact" className={location.pathname === '/contact' ? 'current' : ''}>{translations[language].contact}</Link></li>
+          <li><Link to="/login" className={location.pathname === '/login' ? 'current' : ''}>{translations[language].login}</Link></li>
         </ul>
         <button className="language-toggle-mobile" onClick={toggleLanguage}>
           {language}
