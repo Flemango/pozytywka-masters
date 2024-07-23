@@ -23,6 +23,7 @@
   .login-container {
     margin-top: 5rem;
     max-height: 350px;
+    min-width: 256px;
   }
   
   .reservation-form, .admin-login-form, .login-form, .register-form {
@@ -70,15 +71,18 @@
     background-color: #4CAF50;
     color: white;
     border: none;
-    padding: 0.75rem;
+    padding: 0.9rem;
     border-radius: 5px; /* Rounded edges for the button */
+	  justify-content: center;
+
     cursor: pointer;
     transition: background-color 0.3s ease;
-    width: 50%; /* Half the width of the container */
+    width: 45%; /* Half the width of the container */
+    max-height: 46px;
     margin: 0 auto; /* Center the button */
     margin-top: 1rem;
   }
-  
+
   .reservation-form button:hover, .admin-login-form button:hover, .login-form button:hover, .register-form button:hover {
     background-color: #45a049;
   }

@@ -9,7 +9,8 @@ import Reservation from '../pages/Reservation';
 import Services from '../pages/Services';
 import Contact from '../pages/Contact';
 import AdminLogin from '../pages/AdminLogin';
-import LoginRegister from '../pages/LoginRegister';
+import Login from '../pages/Login';
+import Register from '../pages/Register';
 
 const MainContent = () => {
 
@@ -24,7 +25,8 @@ const MainContent = () => {
           <Route path="/reservation" element={<Reservation />} />
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<LoginRegister />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           <Route path="/admin" element={<AdminLogin />} />
         </Routes>

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
 import { format, isSameDay } from 'date-fns';
+import { LanguageContext } from '../context/LanguageContext';
 
 export const openingHours = {
   Monday: ['15:00', '16:00', '17:00', '18:00', '19:00'],
@@ -14,6 +15,19 @@ export const openingHours = {
   Sunday: [],
 };
 
+const translations = {
+  EN: {
+    avail_hours: 'Available hours on ',
+    no_avail: 'No available hours.'
+
+  },
+  PL: {
+    avail_hours: 'Wolne terminy dla ',
+    no_avail: 'Brak wolnych terminów'
+  }
+};
+
+
 const reservations = [
   { date: new Date(2023, 6, 21), time: '15:00' },
   { date: new Date(2023, 6, 21), time: '16:00' },
@@ -23,6 +37,7 @@ const reservations = [
 const ReservationCalendar = ({ onTimeSelect }) => {
   const [date, setDate] = useState(new Date());
   const [availableTimes, setAvailableTimes] = useState([]);
+  const { language } = useContext(LanguageContext);
 
   useEffect(() => {
     const dayOfWeek = format(date, 'EEEE');
@@ -53,7 +68,7 @@ const ReservationCalendar = ({ onTimeSelect }) => {
         tileDisabled={isDateDisabled}
       />
       <div className="available-times">
-        <h3>Available Times on {format(date, 'yyyy-MM-dd')}</h3>
+        <h3>{translations[language].avail_hours}{format(date, 'yyyy-MM-dd')}</h3>
         {availableTimes.length > 0 ? (
           <ul>
             {availableTimes.map(time => (
@@ -61,7 +76,7 @@ const ReservationCalendar = ({ onTimeSelect }) => {
             ))}
           </ul>
         ) : (
-          <p>No available times.</p>
+          <p>{translations[language].no_avail}</p>
         )}
       </div>
     </div>
