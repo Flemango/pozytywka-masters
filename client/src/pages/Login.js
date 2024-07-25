@@ -1,3 +1,4 @@
+// src/pages/Login.js
 import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
@@ -19,7 +20,8 @@ export default function Login() {
       password: 'Password:',
       remember_me: 'Remember me',
       login_btn: 'Login',
-      register_btn: 'Register'
+      register_btn: 'Register',
+      login_failed: 'Login failed. Please check your credentials and try again.'
     },
     PL: {
       login: 'Zaloguj',
@@ -27,29 +29,30 @@ export default function Login() {
       password: 'Hasło:',
       remember_me: 'Zapamiętaj mnie',
       login_btn: 'Zaloguj',
-      register_btn: 'Zarejestruj'
+      register_btn: 'Zarejestruj',
+      login_failed: 'Logowanie nie powiodło się. Sprawdź swoje dane i spróbuj ponownie.'
     }
   };
 
-
   const handleSubmit = async (e) => {
-    // e.preventDefault();
+    e.preventDefault();
 
-    // try {
-    //   const response = await Axios.post('http://localhost:5000/login', {
-    //     email,
-    //     password,
-    //   });
+    try {
+      const response = await Axios.post('http://localhost:5000/login', {
+        email,
+        password,
+      });
 
-    //   if (response.status === 200) {
-    //     if (remember) {
-    //       localStorage.setItem('accessToken', response.data.accessToken);
-    //     }
-    //     navigate('/panel');
-    //   }
-    // } catch (error) {
-    //   setMessage('Login failed. Please check your credentials and try again.');
-    // }
+      if (response.status === 200) {
+        if (remember) {
+          localStorage.setItem('userAccessToken', response.data.accessToken);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+        navigate('/home');
+      }
+    } catch (error) {
+      setMessage(translations[language].login_failed);
+    }
   };
 
   const handleRegister = () => {
@@ -61,7 +64,7 @@ export default function Login() {
       <h2>{translations[language].login}</h2>
       <form className="login-form" onSubmit={handleSubmit}>
         <label>
-        {translations[language].email}
+          {translations[language].email}
           <input
             type="email"
             value={email}
@@ -69,7 +72,7 @@ export default function Login() {
           />
         </label>
         <label>
-        {translations[language].password}
+          {translations[language].password}
           <input
             type="password"
             value={password}

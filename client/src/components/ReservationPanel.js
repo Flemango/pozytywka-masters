@@ -16,6 +16,17 @@ function ReservationPanel() {
   const { language } = useContext(LanguageContext);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (userData) {
+      setFirstName(userData.firstName);
+      setLastName(userData.lastName);
+      setEmail(userData.email);
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleTimeSelect = (date, time) => {
     const formattedDate = date.toISOString().split('T')[0];
@@ -73,6 +84,7 @@ function ReservationPanel() {
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  readOnly={isLoggedIn}
                   required
                 />
               </label>
@@ -82,6 +94,7 @@ function ReservationPanel() {
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
+                  readOnly={isLoggedIn}
                   required
                 />
               </label>
@@ -92,6 +105,7 @@ function ReservationPanel() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                readOnly={isLoggedIn}
                 required
               />
             </label>
