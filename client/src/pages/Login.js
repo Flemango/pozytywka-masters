@@ -45,8 +45,8 @@ export default function Login() {
 
       if (response.status === 200) {
         if (remember) {
-          localStorage.setItem('userAccessToken', response.data.accessToken);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          sessionStorage.setItem('userAccessToken', response.data.accessToken);
+          sessionStorage.setItem('user', JSON.stringify(response.data.user));
         }
         navigate('/home');
       }

@@ -1,9 +1,11 @@
 import React, { useContext, useState, useEffect } from 'react';
-import './SubmitForms.css';
+
 import { LanguageContext } from '../context/LanguageContext';
 import ReservationCalendar from './ReservationCalendar';
+
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
+import './SubmitForms.css';
 
 function ReservationPanel() {
   const [firstName, setFirstName] = useState('');
@@ -18,14 +20,25 @@ function ReservationPanel() {
   const [selectedTime, setSelectedTime] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (userData) {
-      setFirstName(userData.firstName);
-      setLastName(userData.lastName);
-      setEmail(userData.email);
-      setIsLoggedIn(true);
-    }
+    const checkAuth = async () => {
+      const token = sessionStorage.getItem('userAccessToken');
+      if (!token) {
+        sessionStorage.removeItem('user');
+        return;
+      } else {
+        const userData = JSON.parse(sessionStorage.getItem('user'));
+        if (userData) {
+          setFirstName(userData.firstName);
+          setLastName(userData.lastName);
+          setEmail(userData.email);
+          setIsLoggedIn(true);
+        }
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const handleTimeSelect = (date, time) => {

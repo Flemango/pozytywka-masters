@@ -10,14 +10,24 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminPanel from './pages/AdminPanel';
 
 function App() {
-  const [backendData, setBackendData] = useState({ users: [] });
+  // const [backendData, setBackendData] = useState({ users: [] });
 
-  useEffect(() => {
-    fetch("/users")
-      .then((response) => response.json())
-      .then((data) => setBackendData(data))
-      .catch((error) => console.error('Error fetching data:', error));
-  }, []);
+  // useEffect(() => {
+    // fetch("/users")
+    //   .then((response) => response.json())
+    //   .then((data) => setBackendData(data))
+    //   .catch((error) => console.error('Error fetching data:', error));
+    
+    // const checkAuth = async () => {
+    //   const token = localStorage.getItem('userAccessToken');
+    //   if (!token) {
+    //     localStorage.removeItem('user');
+    //     return;
+    //   }
+    // };
+
+    // checkAuth();
+  // }, []);
 
   return (
     <>
@@ -28,12 +38,12 @@ function App() {
             <Route path="*" element={<MainContent />} />
           </Routes>
         </BrowserRouter>
-        {backendData.users.map((user, index) => (
+        {/* {backendData.users.map((user, index) => (
           <React.Fragment key={index}>
             {user}
             {index !== backendData.users.length - 1 && <br />}
           </React.Fragment>
-        ))}
+        ))} */}
       </LanguageProvider>
     </>
   );

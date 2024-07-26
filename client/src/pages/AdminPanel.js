@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
-  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
+  const [accessToken, setAccessToken] = useState(sessionStorage.getItem('accessToken'));
 
   useEffect(() => {
     let interval;
@@ -19,10 +19,10 @@ const AdminPanel = () => {
         );
 
         setAccessToken(response.data.accessToken);
-        localStorage.setItem('accessToken', response.data.accessToken);
+        sessionStorage.setItem('accessToken', response.data.accessToken);
       } catch (error) {
         setAccessToken('');
-        localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('accessToken');
         navigate('/');
       }
     };

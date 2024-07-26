@@ -19,7 +19,7 @@ export default function AdminLogin() {
       });
 
       if (response.status === 200) {
-        localStorage.setItem('accessToken', response.data.accessToken);
+        sessionStorage.setItem('accessToken', response.data.accessToken);
         navigate('/panel');
       }
     } catch (error) {

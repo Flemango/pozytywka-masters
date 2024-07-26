@@ -17,7 +17,7 @@ app.get("/users", (req, res, next) => {
 
 let refreshTokens = []
 let secretKey = process.env.ACCESS_TOKEN_SECRET;
-let secretRefresh = process.env.REFRESH_TOKEN_SECRET;
+
 
 const users = [
   {
@@ -81,7 +81,11 @@ app.post('/login', async (req, res) => {
 
   const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: '10s' });
 
-  res.json({ accessToken, user });
+  res.json({ accessToken, user: {
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName
+  } });
 });
 
 const authenticateToken = (req, res, next) => {

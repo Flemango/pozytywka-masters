@@ -9,7 +9,7 @@ const ProtectedRoute = ({ element: Component }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
+      const token = sessionStorage.getItem('accessToken');
       if (!token) {
         setIsAuthenticated(false);
         setLoading(false);
