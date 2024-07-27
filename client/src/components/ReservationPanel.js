@@ -24,16 +24,28 @@ function ReservationPanel() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = sessionStorage.getItem('userAccessToken');
-      if (!token) {
+      const rememberToken = localStorage.getItem('userAccessToken');
+      if (!token && !rememberToken) {
         sessionStorage.removeItem('user');
         return;
       } else {
-        const userData = JSON.parse(sessionStorage.getItem('user'));
-        if (userData) {
-          setFirstName(userData.firstName);
-          setLastName(userData.lastName);
-          setEmail(userData.email);
-          setIsLoggedIn(true);
+        if (rememberToken) {
+          const savedUserData = JSON.parse(localStorage.getItem('user'));
+          if (savedUserData) {
+            setFirstName(savedUserData.firstName);
+            setLastName(savedUserData.lastName);
+            setEmail(savedUserData.email);
+            setIsLoggedIn(true);
+          }
+        }
+        else {
+          const userData = JSON.parse(sessionStorage.getItem('user'));
+          if (userData) {
+            setFirstName(userData.firstName);
+            setLastName(userData.lastName);
+            setEmail(userData.email);
+            setIsLoggedIn(true);
+          }
         }
       }
     };

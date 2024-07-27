@@ -16,12 +16,21 @@ function Navbar() {
   };
 
   useEffect(() => {
-    setIsLoggedIn(!!sessionStorage.getItem('userAccessToken'));
+    const rememberToken = localStorage.getItem('userAccessToken');
+    if (rememberToken) setIsLoggedIn(true);
+    else setIsLoggedIn(!!sessionStorage.getItem('userAccessToken'));
   }, [location]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('userAccessToken');
-    sessionStorage.removeItem('user');
+    if (!!localStorage.getItem('userAccessToken'))
+    {
+      localStorage.removeItem('userAccessToken');
+      localStorage.removeItem('user');
+    } else {
+      sessionStorage.removeItem('userAccessToken');
+      sessionStorage.removeItem('user');
+    }
+    
     setIsLoggedIn(false);
     navigate('/');
   };
