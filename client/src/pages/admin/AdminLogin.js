@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Axios from 'axios';
-import '../components/SubmitForms.css';
+import '../../components/SubmitForms.css';
 
 export default function AdminLogin() {
   const navigate = useNavigate();

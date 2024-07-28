@@ -10,7 +10,7 @@ import NoPage from '../pages/NoPage';
 import Reservation from '../pages/Reservation';
 import Services from '../pages/Services';
 import Contact from '../pages/Contact';
-import AdminLogin from '../pages/AdminLogin';
+import AdminLogin from '../pages/admin/AdminLogin';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 

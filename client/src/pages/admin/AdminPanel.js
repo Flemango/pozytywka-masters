@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Routes, Route } from 'react-router-dom';
+
+import AdminNavbar from '../../components/admin/AdminNavbar';
+import Reservations from './Reservations';
+import Clients from './Clients';
+import Psychologists from './Psychologists';
+import Rooms from './Rooms';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -55,6 +61,13 @@ const AdminPanel = () => {
     <div>
       <h1>Admin Panel</h1>
       <p>{message}</p>
+      <AdminNavbar />
+      <Routes>
+        <Route path="reservations" element={<Reservations />} />
+        <Route path="clients" element={<Clients />} />
+        <Route path="psychologists" element={<Psychologists />} />
+        <Route path="rooms" element={<Rooms />} />
+      </Routes>
     </div>
   );
 };

@@ -7,7 +7,7 @@ import './App.css';
 import MainContent from './components/MainContent';
 import ProtectedRoute from './components/ProtectedRoute';
 
-import AdminPanel from './pages/AdminPanel';
+import AdminPanel from './pages/admin/AdminPanel';
 
 function App() {
   // const [backendData, setBackendData] = useState({ users: [] });
@@ -34,7 +34,7 @@ function App() {
       <LanguageProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/panel" element={<ProtectedRoute element={AdminPanel} />} />
+            <Route path="/panel/*" element={<ProtectedRoute element={AdminPanel} />} />
             <Route path="*" element={<MainContent />} />
           </Routes>
         </BrowserRouter>
