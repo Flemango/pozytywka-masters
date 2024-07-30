@@ -1,8 +1,9 @@
 // src/components/AdminNavbar.js
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import './AdminNavbar.css';
 
-const AdminNavbar = () => {
+const AdminNavbar = ({ adminName, onLogout }) => {
   const location = useLocation();
   const links = [
     { to: '/panel/reservations', label: 'Reservations' },
@@ -11,8 +12,18 @@ const AdminNavbar = () => {
     { to: '/panel/rooms', label: 'Rooms' }
   ];
 
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    onLogout();
+    navigate('/');
+  };
+
   return (
     <nav className="admin-navbar">
+      <div className="welcome-message">
+        Welcome {adminName}
+      </div>
       <ul>
         {links.map((link) => (
           <li key={link.to}>
@@ -25,6 +36,9 @@ const AdminNavbar = () => {
           </li>
         ))}
       </ul>
+      <div className="logout-button" onClick={handleLogout}>
+        Logout
+      </div>
     </nav>
   );
 };

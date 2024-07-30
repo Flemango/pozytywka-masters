@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Axios from 'axios';
-import { useNavigate, Routes, Route } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
+import './AdminPanel.css';
 
 import AdminNavbar from '../../components/admin/AdminNavbar';
 import Reservations from './Reservations';
@@ -10,7 +11,9 @@ import Rooms from './Rooms';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [message, setMessage] = useState('');
+  const [adminName, setAdminName] = useState('');
   const [accessToken, setAccessToken] = useState(sessionStorage.getItem('accessToken'));
 
   useEffect(() => {
@@ -47,6 +50,7 @@ const AdminPanel = () => {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         setMessage(response.data.message);
+        setAdminName(response.data.user.firstName);
       } catch (error) {
         navigate('/');
       }
@@ -57,17 +61,25 @@ const AdminPanel = () => {
     }
   }, [accessToken, navigate]);
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('accessToken');
+    setAccessToken('');
+    navigate('/');
+  };
+
   return (
     <div>
-      <h1>Admin Panel</h1>
-      <p>{message}</p>
-      <AdminNavbar />
-      <Routes>
-        <Route path="reservations" element={<Reservations />} />
-        <Route path="clients" element={<Clients />} />
-        <Route path="psychologists" element={<Psychologists />} />
-        <Route path="rooms" element={<Rooms />} />
-      </Routes>
+      <AdminNavbar adminName={adminName} onLogout={handleLogout} />
+      <div className="admin-content">
+        {location.pathname === '/panel' 
+        && <div><h1>Admin panel</h1><p>{message}</p></div>}
+        <Routes>
+          <Route path="reservations" element={<Reservations />} />
+          <Route path="clients" element={<Clients />} />
+          <Route path="psychologists" element={<Psychologists />} />
+          <Route path="rooms" element={<Rooms />} />
+        </Routes>
+      </div>
     </div>
   );
 };
