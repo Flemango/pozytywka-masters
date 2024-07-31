@@ -168,3 +168,19 @@
   flex: 1;
 }
 
+@keyframes scaleUp {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25%, 75% {
+    transform: scale(1.04); /* Scale up a bit */
+  }
+  50% {
+    transform: scale(1);
+  }
+}
+
+.animate-calendar {
+  animation: scaleUp 0.6s ease-in-out;
+  
+}

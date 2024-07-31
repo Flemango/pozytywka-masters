@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 
 import { LanguageContext } from '../context/LanguageContext';
 import ReservationCalendar from './ReservationCalendar';
@@ -19,6 +19,7 @@ function ReservationPanel() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const calendarRef = useRef(null);
 
 
   useEffect(() => {
@@ -96,6 +97,20 @@ function ReservationPanel() {
     setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
   };
 
+  const handleFocus = () => {
+    if (calendarRef.current) {
+      calendarRef.current.classList.add('animate-calendar');
+      setTimeout(() => {
+        calendarRef.current.classList.remove('animate-calendar');
+      }, 600); // Duration of the animation
+    }
+  };
+
+  const preventTyping = (e) => {
+    e.preventDefault();
+    handleFocus();
+  };
+
   return (
     <div className="reservation-page">
       <div className="reservation-column">
@@ -141,6 +156,9 @@ function ReservationPanel() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  //readOnly
+                  onKeyDown={preventTyping}
+                  onFocus={handleFocus}
                   required
                 />
               </label>
@@ -150,6 +168,9 @@ function ReservationPanel() {
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
+                  //readOnly
+                  onKeyDown={preventTyping}
+                  onFocus={handleFocus}
                   required
                 />
               </label>
@@ -168,7 +189,7 @@ function ReservationPanel() {
           {message && <p className="confirmation-message">{message}</p>}
         </div>
       </div>
-      <div className="calendar-column">
+      <div className="calendar-column" ref={calendarRef}>
         <ReservationCalendar onTimeSelect={handleTimeSelect} />
       </div>
     </div>

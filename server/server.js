@@ -112,10 +112,16 @@ app.post('/refresh', authenticateToken, (req, res) => {
   res.json({ accessToken });
 });
 
+// app.get('/panel', authenticateToken, (req, res) => {
+//   res.json({ message: 'Welcome to the admin panel', user: req.user });
+// });
 app.get('/panel', authenticateToken, (req, res) => {
-  res.json({ message: 'Welcome to the admin panel', user: req.user });
+  const user = users.find(u => u.id === req.user.userId);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  res.json({ message: 'Welcome to the admin panel', user: { firstName: user.firstName } });
 });
-
 
 app.listen(PORT, () => {
   console.log("Server started on port 5000")
