@@ -50,6 +50,18 @@
   .date-time-container label {
     flex: 1; /* Make both date and time inputs take equal space */
   }
+
+  .captcha-container {
+    display: flex;
+    gap: 1rem; /* Space between captcha and input */
+    align-items: center; /* Center items vertically */
+  }
+
+  .captcha-container label {
+    flex: 1; /* Make both captcha and input take equal space */
+  }
+
+
   
   .reservation-form label, .admin-login-form label, .login-form label, .register-form label {
     display: flex;

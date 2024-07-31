@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
+import { loadCaptchaEnginge, LoadCanvasTemplate, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
 
 import { LanguageContext } from '../context/LanguageContext';
 import ReservationCalendar from './ReservationCalendar';
@@ -63,6 +64,7 @@ function ReservationPanel() {
   };
 
   useEffect(() => {
+    loadCaptchaEnginge(6,'white','#333'); 
     setDate(selectedDate);
     setTime(selectedTime);
   }, [selectedDate, selectedTime]);
@@ -76,6 +78,7 @@ function ReservationPanel() {
       date: 'Date',
       time: 'Time',
       captcha: 'Captcha',
+      enter_captcha: 'Enter Captcha',
       reserve: 'Reserve',
       confirmation: 'Reservation confirmed for'
     },
@@ -87,6 +90,7 @@ function ReservationPanel() {
       date: 'Data',
       time: 'Godzina',
       captcha: 'Captcha',
+      enter_captcha: 'Wpisz Captcha',
       reserve: 'Rezerwuj',
       confirmation: 'Rezerwacja potwierdzona dla'
     }
@@ -94,7 +98,10 @@ function ReservationPanel() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
+    if (validateCaptcha(captcha)) 
+      setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
+    else 
+      setMessage('Captcha Does Not Match');
   };
 
   const handleFocus = () => {
@@ -175,15 +182,22 @@ function ReservationPanel() {
                 />
               </label>
             </div>
-            <label>
+            {/* <label>{translations[language].captcha}:</label> */}
+            <div className="captcha-container">
+              <label>
+                {translations[language].enter_captcha}:
+                <input
+                  type="text"
+                  value={captcha}
+                  onChange={(e) => setCaptcha(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="captcha">
               {translations[language].captcha}:
-              <input
-                type="text"
-                value={captcha}
-                onChange={(e) => setCaptcha(e.target.value)}
-                required
-              />
-            </label>
+              <LoadCanvasTemplateNoReload />
+              </label>
+            </div>
             <button type="submit">{translations[language].reserve}</button>
           </form>
           {message && <p className="confirmation-message">{message}</p>}
