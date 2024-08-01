@@ -6,6 +6,7 @@ const PORT = 5000;
 const bcrypt = require("bcryptjs")
 const cors = require("cors")
 const jwt = require("jsonwebtoken")
+const db = require('./db');
 
 app.use(cors({origin: '*'}))
 app.use(express.json())
