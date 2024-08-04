@@ -1,0 +1,66 @@
+.admin-calendar {
+  display: flex;
+  height: calc(80% - 70px); /* Full height minus the top margin */
+  overflow: hidden; /* Prevent scrolling */
+}
+
+.calendar-container {
+  flex: 3;
+  padding: 0 20px;
+  display: flex; 
+  justify-content: center;
+  align-items: center;
+  height: 100%; /* Ensure the container uses the full available height */
+}
+
+.reservation-info {
+  flex: 2;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-left: 1px solid #ccc;
+  height: 100%; /* Make it take up the full available height */
+  overflow-y: auto; /* Handle any potential overflow within this section */
+}
+
+.admin-calendar .react-calendar {
+  height: 100%;
+  width: 100%;
+  max-height: 100%; /* Ensure the calendar does not exceed container height */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 0;
+}
+
+.admin-calendar .react-calendar__tile {
+  height: 100px; /* Adjusted height for better fit */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  overflow: hidden; /* Prevent content overflow */
+  text-align: center;
+}
+
+.react-calendar__tile > abbr {
+  margin-bottom: 5px;
+  font-weight: bold;
+  display: block;
+}
+
+.reservation-badge {
+  background-color: #4caf50;
+  color: white;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-top: 5px;
+  display: inline-block;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.no-reservations {
+  font-style: italic;
+  color: #888;
+  margin-top: 10px;
+}
