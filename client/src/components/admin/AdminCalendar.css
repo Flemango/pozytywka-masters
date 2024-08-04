@@ -42,7 +42,7 @@
   text-align: center;
 }
 
-.react-calendar__tile > abbr {
+.admin-calendar .react-calendar__tile > abbr {
   margin-bottom: 5px;
   font-weight: bold;
   display: block;
@@ -63,4 +63,28 @@
   font-style: italic;
   color: #888;
   margin-top: 10px;
+}
+
+.toggle-selectionmode-btn {
+  margin: 10px 20px;
+  padding: 10px 5px 10px 5px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.move-left-btn, .move-right-btn {
+  margin: 10px 5px;
+  padding: 10px 20px 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.toggle-selectionmode-btn:hover, .move-left-btn:hover, .move-right-btn:hover {
+  background-color: #45a049;
 }
