@@ -2,7 +2,8 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { loadCaptchaEnginge, LoadCanvasTemplate, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
 
 import { LanguageContext } from '../context/LanguageContext';
-import ReservationCalendar from './ReservationCalendar';
+import ReservationCalendar, { openingHours } from './ReservationCalendar';
+import { format, isSameDay, parseISO } from 'date-fns';
 
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
@@ -80,7 +81,8 @@ function ReservationPanel() {
       captcha: 'Captcha',
       enter_captcha: 'Enter Captcha',
       reserve: 'Reserve',
-      confirmation: 'Reservation confirmed for'
+      confirmation: 'Reservation confirmed for',
+      invalidDateTime: 'The selected date or time is not available. Please choose from the calendar.',
     },
     PL: {
       title: 'Zarezerwuj spotkanie',
@@ -92,16 +94,34 @@ function ReservationPanel() {
       captcha: 'Captcha',
       enter_captcha: 'Wpisz Captcha',
       reserve: 'Rezerwuj',
-      confirmation: 'Rezerwacja potwierdzona dla'
+      confirmation: 'Rezerwacja potwierdzona dla',
+      invalidDateTime: 'Wybrana data lub godzina jest niedostępna. Proszę wybrać z kalendarza.',
     }
+  };
+
+  const isDateTimeAvailable = (date, time) => {
+    const dayOfWeek = format(parseISO(date), 'EEEE');
+    const availableTimes = openingHours[dayOfWeek] || [];
+    
+    // Check if the time is available for the selected day
+    if (!availableTimes.includes(time)) {
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateCaptcha(captcha)) 
-      setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
-    else 
+    if (validateCaptcha(captcha)) {
+      if (isDateTimeAvailable(date, time)) {
+        setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
+      } else {
+        setMessage(translations[language].invalidDateTime);
+      }
+    } else {
       setMessage('Captcha Does Not Match');
+    }
   };
 
   const handleFocus = () => {
