@@ -34,18 +34,6 @@ function AdminCalendar({ reservations: initialReservations }) {
     }
   };
 
-  const moveReservations = (direction) => {
-    const updatedReservations = reservations.map(reservation => {
-      if (isReservationSelected(reservation)) {
-        const newDate = new Date(reservation.date);
-        newDate.setDate(newDate.getDate() + direction);
-        return { ...reservation, date: newDate.toISOString().split('T')[0] };
-      }
-      return reservation;
-    });
-    setReservations(updatedReservations);
-  };
-
   const isReservationSelected = (reservation) => {
     const reservationDate = new Date(reservation.date);
     if (Array.isArray(selectedDates)) {
@@ -61,8 +49,64 @@ function AdminCalendar({ reservations: initialReservations }) {
            date1.getDate() === date2.getDate();
   };
 
+  const moveReservation = (reservationIndex, direction) => {
+    const updatedReservations = reservations.map((reservation, index) => {
+      if (index === reservationIndex) {
+        const newDate = new Date(reservation.date);
+        newDate.setDate(newDate.getDate() + direction);
+        return { ...reservation, date: newDate.toISOString().split('T')[0] };
+      }
+      return reservation;
+    });
+    setReservations(updatedReservations);
+  };
+
+  const moveReservations = (direction) => {
+    const updatedReservations = reservations.map(reservation => {
+      if (isReservationSelected(reservation)) {
+        const newDate = new Date(reservation.date);
+        newDate.setDate(newDate.getDate() + direction);
+        return { ...reservation, date: newDate.toISOString().split('T')[0] };
+      }
+      return reservation;
+    });
+    setReservations(updatedReservations);
+  };
+
+  const deleteReservation = (reservationIndex) => {
+    const reservationToDelete = reservations[reservationIndex];
+    const confirmMessage = `Are you sure you want to delete the reservation for ${reservationToDelete.name} on ${reservationToDelete.date} at ${reservationToDelete.time}?`;
+    
+    if (window.confirm(confirmMessage)) {
+      const updatedReservations = reservations.filter((_, index) => index !== reservationIndex);
+      setReservations(updatedReservations);
+    }
+  };
+
+  const deleteReservations = () => {
+    let confirmMessage;
+    if (Array.isArray(selectedDates)) {
+      confirmMessage = `Are you sure you want to delete all reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}?`;
+    } else {
+      confirmMessage = `Are you sure you want to delete all reservations for ${selectedDates.toDateString()}?`;
+    }
+  
+    if (window.confirm(confirmMessage)) {
+      const updatedReservations = reservations.filter(reservation => {
+        const reservationDate = new Date(reservation.date);
+        if (Array.isArray(selectedDates)) {
+          return reservationDate < selectedDates[0] || reservationDate > selectedDates[1];
+        } else {
+          return !isSameDay(reservationDate, selectedDates);
+        }
+      });
+      setReservations(updatedReservations);
+    }
+  };
+
   const moveLeft = () => moveReservations(-1);
   const moveRight = () => moveReservations(1);
+  const moveWeekForward = () => moveReservations(7);
 
   const reservationsToShow = getReservationsToShow();
   
@@ -95,6 +139,12 @@ function AdminCalendar({ reservations: initialReservations }) {
               {reservationsToShow.map((reservation, index) => (
                 <li key={index}>
                   <strong>{reservation.date}</strong> {reservation.time} - {reservation.name} ({reservation.email})
+                  <div className="reservation-actions">
+                    <button onClick={() => moveReservation(index, -1)} className="move-btn">←</button>
+                    <button onClick={() => moveReservation(index, 1)} className="move-btn">→</button>
+                    <button onClick={() => moveReservation(index, 7)} className="move-btn">+7</button>
+                    <button onClick={() => deleteReservation(index)} className="delete-btn">Delete</button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -103,11 +153,15 @@ function AdminCalendar({ reservations: initialReservations }) {
           )}
         </div>
       </div>
-      <button className="toggle-selectionmode-btn" onClick={toggleSelectionMode}>
-        {isRangeMode ? 'Switch to Single Day' : 'Switch to Range'}
-      </button>
-      <button className="move-left-btn" onClick={moveLeft}>{"<"}</button>
-      <button className="move-right-btn" onClick={moveRight}>{">"}</button>
+      <div className="global-actions">
+        <button className="toggle-selectionmode-btn" onClick={toggleSelectionMode}>
+          {isRangeMode ? 'Switch to Single Day' : 'Switch to Range'}
+        </button>
+        <button className="move-btn" onClick={moveLeft}>{"◄"}</button>
+        <button className="move-btn" onClick={moveRight}>{"►"}</button>
+        <button className="move-btn" onClick={moveWeekForward}>+7</button>
+        <button className="delete-btn" onClick={deleteReservations}>Delete</button>
+      </div>
     </div>
   );
 }
