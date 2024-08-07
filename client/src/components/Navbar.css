@@ -68,7 +68,7 @@
   display: none;
 }
 
-.language-toggle, .login-button, .logout-button {
+.language-toggle, .login-button {
   background-color: white;
   color: #4CAF50;
   border: none;
@@ -91,15 +91,10 @@
   height: 18.4px;
 }
 
-.logout-button {
-  width: 5.5rem;
-}
-
-.language-toggle:hover, .login-button:hover, .logout-button:hover {
+.language-toggle:hover, .login-button:hover {
   scale: 101%;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow on hover */
 }
-
 
 
 @media (max-width: 768px) {

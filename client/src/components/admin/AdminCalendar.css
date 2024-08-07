@@ -4,6 +4,7 @@
   overflow: hidden; /* Prevent scrolling */
 }
 
+
 .calendar-container {
   flex: 3;
   padding: 0 20px;
@@ -16,9 +17,10 @@
 .reservation-info {
   flex: 2;
   padding: 20px;
-  background-color: #f5f5f5;
-  border-left: 1px solid #ccc;
-  height: 100%; /* Make it take up the full available height */
+  background: rgba(255, 255, 255, 0.33);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 -8px -32px 0 rgba(46, 46, 48, 0.37);
+  border-radius: 10px;
   overflow-y: auto; /* Handle any potential overflow within this section */
 }
 
@@ -63,6 +65,7 @@
   font-style: italic;
   color: #888;
   margin-top: 10px;
+  text-align: center;
 }
 
 .toggle-selectionmode-btn {
@@ -111,6 +114,10 @@
 
 .move-btn:hover, .delete-btn:hover {
   opacity: 0.8;
+}
+
+.global-actions {
+  margin-left: 16px;
 }
 
 .global-actions .move-btn, .global-actions .delete-btn {

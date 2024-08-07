@@ -36,8 +36,8 @@ function Navbar() {
   };
 
   const translations = {
-    EN: { home: 'Home', reservation: 'Reservation', services: 'Services', contact: 'Contact', login: isLoggedIn ? 'Log out' : 'Log in' },
-    PL: { home: 'Strona Główna', reservation: 'Rezerwacja', services: 'Usługi', contact: 'Kontakt', login: isLoggedIn ? 'Wyloguj' : 'Zaloguj' }
+    EN: { home: 'Home', reservation: 'Reservation', services: 'Services', contact: 'Contact', login: isLoggedIn ? 'Profile' : 'Log in' },
+    PL: { home: 'Strona Główna', reservation: 'Rezerwacja', services: 'Usługi', contact: 'Kontakt', login: isLoggedIn ? 'Profil' : 'Zaloguj' }
   };
 
   return (
@@ -51,11 +51,7 @@ function Navbar() {
           <li><Link to="/contact" className={location.pathname === '/contact' ? 'current' : ''}>{translations[language].contact}</Link></li>
         </ul>
       </div>
-      {isLoggedIn ? (
-        <button className="logout-button" onClick={handleLogout}>{translations[language].login}</button>
-      ) : (
-        <Link to="/login" className={`login-button ${location.pathname === '/login' ? 'current' : ''}`}>{translations[language].login}</Link>
-      )}
+        <Link to="/login" className={`login-button ${location.pathname === '/login' ? 'current' : ''}`} onClick={isLoggedIn ? (handleLogout) : ('')}>{translations[language].login}</Link>
       <button className="language-toggle" onClick={toggleLanguage}>
         {language}
       </button>
@@ -68,11 +64,7 @@ function Navbar() {
           <li><Link to="/reservation" className={location.pathname === '/reservation' ? 'current' : ''}>{translations[language].reservation}</Link></li>
           <li><Link to="/services" className={location.pathname === '/services' ? 'current' : ''}>{translations[language].services}</Link></li>
           <li><Link to="/contact" className={location.pathname === '/contact' ? 'current' : ''}>{translations[language].contact}</Link></li>
-          <li>{isLoggedIn ? (
-            <button className="logout-button" onClick={handleLogout}>{translations[language].login}</button>
-          ) : (
-            <Link to="/login" className={`login-button ${location.pathname === '/login' ? 'current' : ''}`}>{translations[language].login}</Link>
-          )}</li>
+          <li><Link to="/login" className={`login-button-mobile ${location.pathname === '/login' ? 'current' : ''}`} onClick={isLoggedIn ? (handleLogout) : ('')}>{translations[language].login}</Link></li>
         </ul>
         <button className="language-toggle-mobile" onClick={toggleLanguage}>
           {language}
