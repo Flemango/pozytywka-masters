@@ -13,6 +13,8 @@ import Contact from '../pages/Contact';
 import AdminLogin from '../pages/admin/AdminLogin';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import Profile from '../pages/Profile';
+import ChangePassword from '../pages/ChangePassword';
 
 const MainContent = () => {
   const navigate = useNavigate();
@@ -56,6 +58,8 @@ const MainContent = () => {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/change-password" element={<ChangePassword />} />
 
           <Route path="/admin" element={<AdminLogin />} />
         </Routes>
