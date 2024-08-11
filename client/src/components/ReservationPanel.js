@@ -21,8 +21,14 @@ function ReservationPanel() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedPsychologist, setSelectedPsychologist] = useState(null);
   const calendarRef = useRef(null);
 
+  const psychologists = [
+    { id: 1, name: 'Dr. Emily Brown' },
+    { id: 2, name: 'Dr. Michael Johnson' },
+    // Add more psychologists as needed
+  ];
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -55,6 +61,7 @@ function ReservationPanel() {
 
     checkAuth();
   }, []);
+  
 
   const handleTimeSelect = (date, time) => {
     const formattedDate = date.toISOString().split('T')[0];
@@ -68,6 +75,10 @@ function ReservationPanel() {
     loadCaptchaEnginge(6,'white','#333'); 
     setDate(selectedDate);
     setTime(selectedTime);
+
+    if (psychologists.length > 0 && !selectedPsychologist) {
+      setSelectedPsychologist(psychologists[0].id);
+    }
   }, [selectedDate, selectedTime]);
 
   const translations = {
@@ -76,6 +87,7 @@ function ReservationPanel() {
       firstName: 'First Name',
       lastName: 'Last Name',
       email: 'Email',
+      psychologist: 'Select Psychologist',
       date: 'Date',
       time: 'Time',
       captcha: 'Captcha',
@@ -89,6 +101,7 @@ function ReservationPanel() {
       firstName: 'Imię',
       lastName: 'Nazwisko',
       email: 'Email',
+      psychologist: 'Wybierz psychologa',
       date: 'Data',
       time: 'Godzina',
       captcha: 'Captcha',
@@ -100,15 +113,10 @@ function ReservationPanel() {
   };
 
   const isDateTimeAvailable = (date, time) => {
+    if (!selectedPsychologist) return false;
     const dayOfWeek = format(parseISO(date), 'EEEE');
-    const availableTimes = openingHours[dayOfWeek] || [];
-    
-    // Check if the time is available for the selected day
-    if (!availableTimes.includes(time)) {
-      return false;
-    }
-
-    return true;
+    const availableTimes = openingHours[selectedPsychologist]?.[dayOfWeek] || [];
+    return availableTimes.includes(time);
   };
 
   const handleSubmit = (e) => {
@@ -150,6 +158,7 @@ function ReservationPanel() {
                 <input
                   type="text"
                   value={firstName}
+                  placeholder="Jan"
                   onChange={(e) => setFirstName(e.target.value)}
                   readOnly={isLoggedIn}
                   required
@@ -160,22 +169,41 @@ function ReservationPanel() {
                 <input
                   type="text"
                   value={lastName}
+                  placeholder="Kowalski"
                   onChange={(e) => setLastName(e.target.value)}
                   readOnly={isLoggedIn}
                   required
                 />
               </label>
             </div>
+            <div className="name-container">
             <label>
               {translations[language].email}:
               <input
                 type="email"
                 value={email}
+                placeholder="user@example.com"
                 onChange={(e) => setEmail(e.target.value)}
                 readOnly={isLoggedIn}
                 required
               />
             </label>
+            <label>
+              {translations[language].psychologist}:
+              <select
+                value={selectedPsychologist}
+                onChange={(e) => setSelectedPsychologist(parseInt(e.target.value))}
+                required
+              >
+                <option value="" disabled>Select a psychologist</option>
+                {psychologists.map(psychologist => (
+                  <option key={psychologist.id} value={psychologist.id}>
+                    {psychologist.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            </div>
             <div className="date-time-container">
               <label>
                 {translations[language].date}:
@@ -224,7 +252,10 @@ function ReservationPanel() {
         </div>
       </div>
       <div className="calendar-column" ref={calendarRef}>
-        <ReservationCalendar onTimeSelect={handleTimeSelect} />
+      <ReservationCalendar 
+        onTimeSelect={handleTimeSelect} 
+        selectedPsychologist={selectedPsychologist}
+      />
       </div>
     </div>
   );

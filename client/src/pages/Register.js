@@ -11,6 +11,7 @@ export default function Register() {
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [message, setMessage] = useState('');
   const { language } = useContext(LanguageContext);
 
@@ -23,6 +24,7 @@ export default function Register() {
       email: 'E-mail:',
       password: 'Password:',
       repeat: 'Confirm Password:',
+      phone_number: 'Phone number:',
     },
     PL: {
       register: 'Zarejestruj',
@@ -31,6 +33,7 @@ export default function Register() {
       last_name: 'Nazwisko:',
       password: 'Hasło:',
       repeat: 'Powtórz hasło:',
+      phone_number: 'Numer telefonu:',
     }
   };
 
@@ -63,20 +66,33 @@ export default function Register() {
     <div className="register-container">
     <h2>{translations[language].register}</h2>
       <form className="register-form" onSubmit={handleSubmit}>
+      <div className="name-container">
         <label>
           {translations[language].email}
           <input
             type="email"
             value={email}
+            placeholder="user@example.com"
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
+        <label>
+            {translations[language].phone_number}
+            <input
+              type="number"
+              value={phoneNumber}
+              placeholder="000-000-000"
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+        </label>
+        </div>
         <div className="name-container">
           <label>
             {translations[language].first_name}
             <input
               type="text"
               value={firstName}
+              placeholder="Jan"
               onChange={(e) => setFirstName(e.target.value)}
             />
           </label>
@@ -85,6 +101,7 @@ export default function Register() {
             <input
               type="text"
               value={lastName}
+              placeholder="Kowalski"
               onChange={(e) => setLastName(e.target.value)}
             />
           </label>

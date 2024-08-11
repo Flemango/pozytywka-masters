@@ -8,6 +8,10 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Slight shadow for a 3D effect */
   }
 
+  .reservation-container { 
+    min-width: 380px;
+  }
+
   .login-register-container {
     display: flex;
     justify-content: space-between;
@@ -73,12 +77,16 @@
     color: #333;
   }
   
-  .reservation-form input, .admin-login-form input, .login-form input, .register-form input, .profile-panel input {
+  .reservation-form input, .admin-login-form input, .login-form input, .register-form input, .profile-panel input, .reservation-form select {
     padding: 0.5rem;
     border-radius: 5px; /* Rounded edges for input elements */
     border: 1px solid #ccc;
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .reservation-form select {
+    height: 100%
   }
   
   .reservation-form button, .admin-login-form button, .login-form button, .register-form button, .profile-panel button {
@@ -228,4 +236,9 @@ input.invalid {
 .error {
   color: red;
   font-style: italic;
+}
+
+input::placeholder {
+  opacity: 0.3;
+  color: gray;
 }
