@@ -12,12 +12,13 @@ app.use(cors({origin: '*'}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true })) //przesylanie formularzami
 
-app.get("/users", (req, res, next) => {
-  res.json({ "users": ["aaa", "bbb", "ccc"]})
-})
+// app.get("/users", (req, res, next) => {
+//   res.json({ "users": ["aaa", "bbb", "ccc"]})
+// })
 
 let refreshTokens = []
 let secretKey = process.env.ACCESS_TOKEN_SECRET;
+let expirationTime = '10m';
 
 
 const users = [
@@ -47,6 +48,10 @@ async function setup() {
   }
 }
 
+// const generateAccessToken = (user) => {
+//   return jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: expirationTime });
+// };
+
 app.post('/admin', async (req, res) => {
   const { username, password } = req.body;
   const user = users.find(u => u.username === username && u.isAdmin);
@@ -61,7 +66,7 @@ app.post('/admin', async (req, res) => {
     return res.status(401).json({ message: 'Invalid password' });
   }
 
-  const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: '10s' });
+  const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: expirationTime });
 
   res.json({ accessToken });
 });
@@ -80,7 +85,7 @@ app.post('/login', async (req, res) => {
     return res.status(401).json({ message: 'Invalid password' });
   }
 
-  const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: '10s' });
+  const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: expirationTime });
 
   res.json({ accessToken, user: {
     email: user.email,
@@ -99,7 +104,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, secretKey, (err, user) => {
     if (err) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(403).json({ message: 'Forbidden' });
     }
 
     req.user = user;
@@ -108,20 +113,32 @@ const authenticateToken = (req, res, next) => {
 };
 
 app.post('/refresh', authenticateToken, (req, res) => {
-  const accessToken = jwt.sign({ userId: req.user.userId, isAdmin: req.user.isAdmin }, secretKey, { expiresIn: '10s' });
+  const accessToken = jwt.sign({ userId: req.user.userId, isAdmin: req.user.isAdmin }, secretKey, { expiresIn: expirationTime });
 
   res.json({ accessToken });
 });
 
-// app.get('/panel', authenticateToken, (req, res) => {
-//   res.json({ message: 'Welcome to the admin panel', user: req.user });
-// });
 app.get('/panel', authenticateToken, (req, res) => {
+  res.json({});
+});
+
+app.get('/welcome', authenticateToken, (req, res) => {
   const user = users.find(u => u.id === req.user.userId);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
   res.json({ message: 'Welcome to the admin panel', user: { firstName: user.firstName } });
+});
+
+//nie ma nic w req dlatego nie działa
+app.get('/clients', authenticateToken, async (req, res) => {
+  try {
+    const [clients] = await db.execute('SELECT id, first_name, last_name, email FROM Clients');
+    res.json(clients);
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 app.listen(PORT, () => {

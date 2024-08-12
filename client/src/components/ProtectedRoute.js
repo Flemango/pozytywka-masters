@@ -26,6 +26,7 @@ const ProtectedRoute = ({ element: Component }) => {
         }
       } catch (error) {
         setIsAuthenticated(false);
+        sessionStorage.removeItem('accessToken');
       } finally {
         setLoading(false);
       }

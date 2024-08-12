@@ -20,30 +20,30 @@ const MainContent = () => {
   const navigate = useNavigate();
   const accessToken = sessionStorage.getItem('userAccessToken');
 
-  useEffect(() => {
-    let interval;
+  // useEffect(() => {
+  //   let interval;
     
-    const refreshAccessToken = async () => {
-      try {
-        const response = await Axios.post(
-          'http://localhost:5000/refresh',
-          {},
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
+  //   const refreshAccessToken = async () => {
+  //     try {
+  //       const response = await Axios.post(
+  //         'http://localhost:5000/refresh',
+  //         {},
+  //         { headers: { Authorization: `Bearer ${accessToken}` } }
+  //       );
 
-        sessionStorage.setItem('userAccessToken', response.data.accessToken);
-      } catch (error) {
-        sessionStorage.removeItem('userAccessToken');
-        sessionStorage.removeItem('user');
-      }
-    };
+  //       sessionStorage.setItem('userAccessToken', response.data.accessToken);
+  //     } catch (error) {
+  //       sessionStorage.removeItem('userAccessToken');
+  //       sessionStorage.removeItem('user');
+  //     }
+  //   };
 
-    if (accessToken) {
-      interval = setInterval(refreshAccessToken, 5000); // Refresh every 5 seconds
-    }
+  //   if (accessToken) {
+  //     interval = setInterval(refreshAccessToken, 15000); // Refresh every 15 seconds
+  //   }
 
-    return () => clearInterval(interval);
-  }, [accessToken, navigate]);
+  //   return () => clearInterval(interval);
+  // }, [accessToken, navigate]);
 
   return (
     <>
