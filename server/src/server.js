@@ -133,7 +133,45 @@ app.get('/welcome', authenticateToken, (req, res) => {
 //nie ma nic w req dlatego nie działa
 app.get('/clients', authenticateToken, async (req, res) => {
   try {
-    const [clients] = await db.execute('SELECT id, first_name, last_name, email FROM Clients');
+    const [clients] = await db.execute(`
+      SELECT 
+        c.id,
+        c.first_name,
+        c.last_name,
+        c.email,
+        c.phone_number,
+        r.reservation_date,
+        r.status,
+        rm.room_number,
+        p.first_name AS psychologist_first_name,
+        p.last_name AS psychologist_last_name
+      FROM clients c
+      LEFT JOIN (
+        SELECT 
+          r1.client_id,
+          r1.reservation_date,
+          r1.status,
+          r1.room_id,
+          r1.psychologist_id
+        FROM reservations r1
+        WHERE r1.reservation_date = (
+          SELECT MAX(r2.reservation_date)
+          FROM reservations r2
+          WHERE r2.client_id = r1.client_id
+          AND r2.reservation_date <= NOW()
+        )
+        OR r1.reservation_date = (
+          SELECT MIN(r2.reservation_date)
+          FROM reservations r2
+          WHERE r2.client_id = r1.client_id
+          AND r2.reservation_date > NOW()
+        )
+        ORDER BY r1.reservation_date DESC
+        LIMIT 1
+      ) r ON c.id = r.client_id
+      LEFT JOIN rooms rm ON r.room_id = rm.id
+      LEFT JOIN psychologists p ON r.psychologist_id = p.id
+    `);
     res.json(clients);
   } catch (error) {
     console.error('Error fetching clients:', error);

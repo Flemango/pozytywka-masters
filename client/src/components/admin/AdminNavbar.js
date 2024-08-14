@@ -1,7 +1,6 @@
 // src/components/AdminNavbar.js
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import Axios from 'axios';
 import './AdminNavbar.css';
 
 const AdminNavbar = ({ adminName, onLogout, refreshAccessToken }) => {

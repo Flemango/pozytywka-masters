@@ -1,0 +1,52 @@
+/* src/components/Client.css */
+.client-container {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .client-header {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.33);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  
+  .arrow {
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+  }
+  
+  .arrow.expanded {
+    transform: rotate(90deg);
+  }
+  
+  .client-details {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-top: 1px solid #ccc;
+  }
+  
+  .delete-button {
+    padding: 5px 10px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .delete-button:hover {
+    background-color: #c0392b;
+  }
+  
+  /* src/pages/Clients.css */
+  .clients-list {
+    display: flex;
+    flex-direction: column;
+  }
+  
