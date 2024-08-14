@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Axios from 'axios';
 import './AdminNavbar.css';
 
-const AdminNavbar = ({ adminName, onLogout }) => {
+const AdminNavbar = ({ adminName, onLogout, refreshAccessToken }) => {
   const location = useLocation();
   const links = [
     { to: '/panel/reservations', label: 'Reservations' },
@@ -15,28 +15,13 @@ const AdminNavbar = ({ adminName, onLogout }) => {
 
   const navigate = useNavigate();
 
-  const refreshAccessToken = async () => {
-    try {
-      const accessToken = sessionStorage.getItem('accessToken');
-      if (!accessToken) throw new Error('No access token found');
-
-      const response = await Axios.post(
-        'http://localhost:5000/refresh',
-        {},
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-
-      sessionStorage.setItem('sccessToken', response.data.accessToken);
-    } catch (error) {
-      console.error('Error refreshing access token:', error);
-      sessionStorage.removeItem('accessToken');
-      navigate('/'); // Redirect to login page or any other page as needed
-    }
-  };
-
   const handleLogout = () => {
     onLogout();
     navigate('/');
+  };
+
+  const handleLinkClick = () => {
+    refreshAccessToken();
   };
 
   return (
@@ -50,7 +35,7 @@ const AdminNavbar = ({ adminName, onLogout }) => {
             <Link 
               to={link.to} 
               className={location.pathname === link.to ? 'current' : ''}
-              //onClick={refreshAccessToken}
+              onClick={handleLinkClick}
             >
               {link.label}
             </Link>

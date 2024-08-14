@@ -16,32 +16,23 @@ const AdminPanel = () => {
   const [adminName, setAdminName] = useState('');
   const [accessToken, setAccessToken] = useState(sessionStorage.getItem('accessToken'));
 
-  // useEffect(() => {
-  //   let interval;
+  const refreshAccessToken = async () => {
+    try {
+      const response = await Axios.post(
+        'http://localhost:5000/refresh',
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
 
-  //   const refreshAccessToken = async () => {
-  //     try {
-  //       const response = await Axios.post(
-  //         'http://localhost:5000/refresh',
-  //         {},
-  //         { headers: { Authorization: `Bearer ${accessToken}` } }
-  //       );
-
-  //       setAccessToken(response.data.accessToken);
-  //       sessionStorage.setItem('accessToken', response.data.accessToken);
-  //     } catch (error) {
-  //       setAccessToken('');
-  //       sessionStorage.removeItem('accessToken');
-  //       navigate('/');
-  //     }
-  //   };
-
-  //   if (accessToken) {
-  //     interval = setInterval(refreshAccessToken, 5000); // Refresh every 5 seconds
-  //   }
-
-  //   return () => clearInterval(interval);
-  // }, [accessToken, navigate]);
+      setAccessToken(response.data.accessToken);
+      //sessionStorage.removeItemItem('accessToken');
+      sessionStorage.setItem('accessToken', response.data.accessToken);
+    } catch (error) {
+      setAccessToken('');
+      sessionStorage.removeItem('accessToken');
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,7 +60,7 @@ const AdminPanel = () => {
 
   return (
     <div>
-      <AdminNavbar adminName={adminName} onLogout={handleLogout} />
+      <AdminNavbar adminName={adminName} onLogout={handleLogout} refreshAccessToken={refreshAccessToken} />
       <div className="admin-content">
         {location.pathname === '/panel' 
         && <div><h1>Admin panel</h1><p>{message}</p></div>}
