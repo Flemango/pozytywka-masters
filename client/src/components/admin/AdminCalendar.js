@@ -129,11 +129,14 @@ function AdminCalendar({ reservations: initialReservations }) {
           />
         </div>
         <div className="reservation-info">
-          <h2>
-            {isRangeMode && Array.isArray(selectedDates)
-              ? `Reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}`
-              : `Reservations for ${selectedDates.toDateString()}`}
-          </h2>
+          <div className="reservation-header">
+            <h2>
+              {isRangeMode && Array.isArray(selectedDates)
+                ? `Reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}`
+                : `Reservations for ${selectedDates.toDateString()}`}
+            </h2>
+            <button className="add-reservation-btn">+</button>
+          </div>
           {reservationsToShow.length > 0 ? (
             <ul>
               {reservationsToShow.map((reservation, index) => (

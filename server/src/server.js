@@ -130,7 +130,6 @@ app.get('/welcome', authenticateToken, (req, res) => {
   res.json({ message: 'Welcome to the admin panel', user: { firstName: user.firstName } });
 });
 
-//nie ma nic w req dlatego nie działa
 app.get('/clients', authenticateToken, async (req, res) => {
   try {
     const [clients] = await db.execute(`
@@ -140,37 +139,45 @@ app.get('/clients', authenticateToken, async (req, res) => {
         c.last_name,
         c.email,
         c.phone_number,
-        r.reservation_date,
-        r.status,
-        rm.room_number,
-        p.first_name AS psychologist_first_name,
-        p.last_name AS psychologist_last_name
+        last_res.reservation_date AS last_reservation_date,
+        last_res.status AS last_reservation_status,
+        last_res.room_number AS last_reservation_room,
+        last_res.psychologist_first_name AS last_reservation_psychologist_first_name,
+        last_res.psychologist_last_name AS last_reservation_psychologist_last_name,
+        upcoming_res.reservation_date AS upcoming_reservation_date,
+        upcoming_res.status AS upcoming_reservation_status,
+        upcoming_res.room_number AS upcoming_reservation_room,
+        upcoming_res.psychologist_first_name AS upcoming_reservation_psychologist_first_name,
+        upcoming_res.psychologist_last_name AS upcoming_reservation_psychologist_last_name
       FROM clients c
       LEFT JOIN (
         SELECT 
-          r1.client_id,
-          r1.reservation_date,
-          r1.status,
-          r1.room_id,
-          r1.psychologist_id
-        FROM reservations r1
-        WHERE r1.reservation_date = (
-          SELECT MAX(r2.reservation_date)
-          FROM reservations r2
-          WHERE r2.client_id = r1.client_id
-          AND r2.reservation_date <= NOW()
-        )
-        OR r1.reservation_date = (
-          SELECT MIN(r2.reservation_date)
-          FROM reservations r2
-          WHERE r2.client_id = r1.client_id
-          AND r2.reservation_date > NOW()
-        )
-        ORDER BY r1.reservation_date DESC
-        LIMIT 1
-      ) r ON c.id = r.client_id
-      LEFT JOIN rooms rm ON r.room_id = rm.id
-      LEFT JOIN psychologists p ON r.psychologist_id = p.id
+          r.client_id,
+          r.reservation_date,
+          r.status,
+          rm.room_number,
+          p.first_name AS psychologist_first_name,
+          p.last_name AS psychologist_last_name,
+          ROW_NUMBER() OVER (PARTITION BY r.client_id ORDER BY r.reservation_date DESC) AS rn
+        FROM reservations r
+        LEFT JOIN rooms rm ON r.room_id = rm.id
+        LEFT JOIN psychologists p ON r.psychologist_id = p.id
+        WHERE r.reservation_date <= NOW()
+      ) last_res ON c.id = last_res.client_id AND last_res.rn = 1
+      LEFT JOIN (
+        SELECT 
+          r.client_id,
+          r.reservation_date,
+          r.status,
+          rm.room_number,
+          p.first_name AS psychologist_first_name,
+          p.last_name AS psychologist_last_name,
+          ROW_NUMBER() OVER (PARTITION BY r.client_id ORDER BY r.reservation_date ASC) AS rn
+        FROM reservations r
+        LEFT JOIN rooms rm ON r.room_id = rm.id
+        LEFT JOIN psychologists p ON r.psychologist_id = p.id
+        WHERE r.reservation_date > NOW()
+      ) upcoming_res ON c.id = upcoming_res.client_id AND upcoming_res.rn = 1
     `);
     res.json(clients);
   } catch (error) {

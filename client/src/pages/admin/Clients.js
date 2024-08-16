@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Axios from 'axios';
 import Client from '../../components/admin/Client';
-import './Clients.css'
+import './Clients.css';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
