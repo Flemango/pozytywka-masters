@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './AdminCalendar.css';
+import ReservationCreator from './ReservationCreator';
 
 function AdminCalendar({ reservations: initialReservations }) {
   const [selectedDates, setSelectedDates] = useState(new Date());
   const [isRangeMode, setIsRangeMode] = useState(false);
   const [reservations, setReservations] = useState(initialReservations);
+  
+  const [isCreatingReservation, setIsCreatingReservation] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [psychologists, setPsychologists] = useState([]);
+  const [availableHours, setAvailableHours] = useState([]);
+  const [rooms, setRooms] = useState([]);
   
   const handleDateChange = (date) => {
     setSelectedDates(date);
@@ -104,6 +112,51 @@ function AdminCalendar({ reservations: initialReservations }) {
     }
   };
 
+  const handleAddReservation = async () => {
+    setIsCreatingReservation(true);
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      const headers = { Authorization: `Bearer ${token}` };
+  
+      // Fetch clients
+      const clientsResponse = await axios.get('http://localhost:5000/admin-calendar/clients', { headers });
+      setClients(clientsResponse.data);
+  
+      // Fetch psychologists
+      const psychologistsResponse = await axios.get('http://localhost:5000/admin-calendar/psychologists', { headers });
+      setPsychologists(psychologistsResponse.data);
+
+      // Fetch rooms
+      const roomsResponse = await axios.get('http://localhost:5000/admin-calendar/rooms', { headers });
+      setRooms(roomsResponse.data);
+  
+    } catch (error) {
+      console.error('Error fetching data for reservation creation:', error);
+      // Handle error (e.g., show an error message to the user)
+    }
+  };
+
+  const handleConfirmReservation = async (newReservation) => {
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      const response = await axios.post('http://localhost:5000/admin-calendar/confirm_reservation', newReservation, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Assuming the backend returns the created reservation
+      const createdReservation = response.data;
+      setReservations([...reservations, createdReservation]);
+      setIsCreatingReservation(false);
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      // Handle error (e.g., show an error message to the user)
+    }
+  };
+
+  const handleCancelReservation = () => {
+    setIsCreatingReservation(false);
+  };
+
   const moveLeft = () => moveReservations(-1);
   const moveRight = () => moveReservations(1);
   const moveWeekForward = () => moveReservations(7);
@@ -129,30 +182,44 @@ function AdminCalendar({ reservations: initialReservations }) {
           />
         </div>
         <div className="reservation-info">
-          <div className="reservation-header">
-            <h2>
-              {isRangeMode && Array.isArray(selectedDates)
-                ? `Reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}`
-                : `Reservations for ${selectedDates.toDateString()}`}
-            </h2>
-            <button className="add-reservation-btn">+</button>
-          </div>
-          {reservationsToShow.length > 0 ? (
-            <ul>
-              {reservationsToShow.map((reservation, index) => (
-                <li key={index}>
-                  <strong>{reservation.date}</strong> {reservation.time} - {reservation.name} ({reservation.email})
-                  <div className="reservation-actions">
-                    <button onClick={() => moveReservation(index, -1)} className="move-btn">←</button>
-                    <button onClick={() => moveReservation(index, 1)} className="move-btn">→</button>
-                    <button onClick={() => moveReservation(index, 7)} className="move-btn">+7</button>
-                    <button onClick={() => deleteReservation(index)} className="delete-btn">Delete</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {isCreatingReservation ? (
+            <ReservationCreator
+              date={Array.isArray(selectedDates) ? selectedDates[0] : selectedDates}
+              clients={clients}
+              psychologists={psychologists}
+              rooms={rooms}
+              availableHours={availableHours}
+              onConfirm={handleConfirmReservation}
+              onCancel={handleCancelReservation}
+            />
           ) : (
-            <p className="no-reservations">No reservations for this period.</p>
+            <>
+              <div className="reservation-header">
+                <h2>
+                  {isRangeMode && Array.isArray(selectedDates)
+                    ? `Reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}`
+                    : `Reservations for ${selectedDates.toDateString()}`}
+                </h2>
+                <button className="add-reservation-btn" onClick={handleAddReservation}>+</button>
+              </div>
+              {reservationsToShow.length > 0 ? (
+                <ul>
+                  {reservationsToShow.map((reservation, index) => (
+                    <li key={index}>
+                      <strong>{reservation.date}</strong> {reservation.time} - {reservation.name} ({reservation.email})
+                      <div className="reservation-actions">
+                        <button onClick={() => moveReservation(index, -1)} className="move-btn">←</button>
+                        <button onClick={() => moveReservation(index, 1)} className="move-btn">→</button>
+                        <button onClick={() => moveReservation(index, 7)} className="move-btn">+7</button>
+                        <button onClick={() => deleteReservation(index)} className="delete-btn">Delete</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="no-reservations">No reservations for this period.</p>
+              )}
+            </>
           )}
         </div>
       </div>

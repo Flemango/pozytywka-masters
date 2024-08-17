@@ -6,20 +6,17 @@ const PORT = 5000;
 const bcrypt = require("bcryptjs")
 const cors = require("cors")
 const jwt = require("jsonwebtoken")
+
 const db = require('./db');
+const adminCalendarRoutes = require('./routes/adminCalendarRoutes')(db);
 
 app.use(cors({origin: '*'}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true })) //przesylanie formularzami
 
-// app.get("/users", (req, res, next) => {
-//   res.json({ "users": ["aaa", "bbb", "ccc"]})
-// })
-
 let refreshTokens = []
 let secretKey = process.env.ACCESS_TOKEN_SECRET;
 let expirationTime = '10m';
-
 
 const users = [
   {
@@ -47,10 +44,6 @@ async function setup() {
     user.password = await bcrypt.hash(user.password, 10);
   }
 }
-
-// const generateAccessToken = (user) => {
-//   return jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: expirationTime });
-// };
 
 app.post('/admin', async (req, res) => {
   const { username, password } = req.body;
@@ -185,6 +178,8 @@ app.get('/clients', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
 
 app.listen(PORT, () => {
   console.log("Server started on port 5000")

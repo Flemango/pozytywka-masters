@@ -153,3 +153,39 @@
 .add-reservation-btn:hover {
   background-color: #45a049;
 }
+
+.reservation-creator {
+  padding: 20px;
+  border-radius: 5px;
+}
+
+.reservation-creator select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.reservation-creator-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.reservation-creator-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.reservation-creator-actions button:first-child {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.reservation-creator-actions button:last-child {
+  background-color: #f44336;
+  color: white;
+}
