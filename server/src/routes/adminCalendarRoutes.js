@@ -1,9 +1,46 @@
 const express = require('express');
+const { format } = require('date-fns'); // Make sure to install and import date-fns
 const router = express.Router();
 const db = require('../db'); // Adjust the path as necessary
 
 module.exports = (db) => {
-// Endpoint to get all clients for calendar
+  router.get('/reservations', async (req, res) => {
+    try {
+      const [reservations] = await db.execute(
+        'SELECT r.id, r.reservation_date, r.status, r.duration, ' +
+        'c.first_name AS client_first_name, c.last_name AS client_last_name, c.email AS client_email, ' +
+        'p.first_name AS psychologist_first_name, p.last_name AS psychologist_last_name, ' +
+        'ro.room_number ' +
+        'FROM reservations r ' +
+        'JOIN clients c ON r.client_id = c.id ' +
+        'JOIN psychologists p ON r.psychologist_id = p.id ' +
+        'JOIN rooms ro ON r.room_id = ro.id'
+      );
+
+      const transformedReservations = reservations.map(reservation => {
+        const reservationDate = new Date(reservation.reservation_date);
+        return {
+          id: reservation.id,
+          date: format(reservationDate, 'yyyy-MM-dd'),
+          time: format(reservationDate, 'HH:mm'),
+          formattedDate: format(reservationDate, 'MMMM d, yyyy'),
+          status: reservation.status,
+          duration: reservation.duration,
+          name: `${reservation.client_first_name} ${reservation.client_last_name}`,
+          email: reservation.client_email,
+          psychologist: `${reservation.psychologist_first_name} ${reservation.psychologist_last_name}`,
+          room: reservation.room_number
+        };
+      });
+  
+      res.json(transformedReservations);
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Endpoint to get all clients for calendar
     router.get('/clients', async (req, res) => {
     try {
       const [rows] = await db.execute('SELECT id, first_name, last_name FROM clients');

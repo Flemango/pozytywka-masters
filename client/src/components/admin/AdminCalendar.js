@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -23,6 +23,23 @@ function AdminCalendar({ reservations: initialReservations }) {
   const toggleSelectionMode = () => {
     setIsRangeMode(!isRangeMode);
     setSelectedDates(new Date());
+  };
+
+  useEffect(() => {
+    fetchReservations();
+  }, []);
+
+  const fetchReservations = async () => {
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      const response = await axios.get('http://localhost:5000/admin-calendar/reservations', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setReservations(response.data);
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+      window.Error('Failed to fetch reservations');
+    }
   };
 
   const getReservationsForRange = (start, end) => {
@@ -139,7 +156,7 @@ function AdminCalendar({ reservations: initialReservations }) {
   const handleConfirmReservation = async (newReservation) => {
     try {
       const token = sessionStorage.getItem('accessToken');
-      const response = await axios.post('http://localhost:5000/admin-calendar/confirm_reservation', newReservation, {
+      const response = await axios.post('http://localhost:5000/admin-calendar/confirm-reservation', newReservation, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -206,7 +223,15 @@ function AdminCalendar({ reservations: initialReservations }) {
                 <ul>
                   {reservationsToShow.map((reservation, index) => (
                     <li key={index}>
-                      <strong>{reservation.date}</strong> {reservation.time} - {reservation.name} ({reservation.email})
+                      <strong>{reservation.formattedDate}</strong> {reservation.time} - {reservation.duration}h
+                      <br />
+                      <strong>Client:</strong> {reservation.name} ({reservation.email})
+                      <br />
+                      <strong>Psychologist:</strong> {reservation.psychologist}
+                      <br /> 
+                      <strong>Room:</strong> {reservation.room}
+                      <br />
+                      <strong>Status:</strong> {reservation.status}
                       <div className="reservation-actions">
                         <button onClick={() => moveReservation(index, -1)} className="move-btn">←</button>
                         <button onClick={() => moveReservation(index, 1)} className="move-btn">→</button>
