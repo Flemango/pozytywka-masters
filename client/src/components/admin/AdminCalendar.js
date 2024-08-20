@@ -5,10 +5,12 @@ import 'react-calendar/dist/Calendar.css';
 import './AdminCalendar.css';
 import ReservationCreator from './ReservationCreator';
 
-function AdminCalendar({ reservations: initialReservations }) {
+const BASE_URL = 'http://localhost:5000/admin-calendar';
+
+function AdminCalendar() {
   const [selectedDates, setSelectedDates] = useState(new Date());
   const [isRangeMode, setIsRangeMode] = useState(false);
-  const [reservations, setReservations] = useState(initialReservations);
+  const [reservations, setReservations] = useState([]);
   
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [clients, setClients] = useState([]);
@@ -16,15 +18,6 @@ function AdminCalendar({ reservations: initialReservations }) {
   const [availableHours, setAvailableHours] = useState([]);
   const [rooms, setRooms] = useState([]);
   
-  const handleDateChange = (date) => {
-    setSelectedDates(date);
-  };
-
-  const toggleSelectionMode = () => {
-    setIsRangeMode(!isRangeMode);
-    setSelectedDates(new Date());
-  };
-
   useEffect(() => {
     fetchReservations();
   }, []);
@@ -32,7 +25,7 @@ function AdminCalendar({ reservations: initialReservations }) {
   const fetchReservations = async () => {
     try {
       const token = sessionStorage.getItem('accessToken');
-      const response = await axios.get('http://localhost:5000/admin-calendar/reservations', {
+      const response = await axios.get(`${BASE_URL}/reservations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReservations(response.data);
@@ -40,6 +33,15 @@ function AdminCalendar({ reservations: initialReservations }) {
       console.error('Error fetching reservations:', error);
       window.Error('Failed to fetch reservations');
     }
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDates(date);
+  };
+
+  const toggleSelectionMode = () => {
+    setIsRangeMode(!isRangeMode);
+    setSelectedDates(new Date());
   };
 
   const getReservationsForRange = (start, end) => {
@@ -74,16 +76,54 @@ function AdminCalendar({ reservations: initialReservations }) {
            date1.getDate() === date2.getDate();
   };
 
-  const moveReservation = (reservationIndex, direction) => {
-    const updatedReservations = reservations.map((reservation, index) => {
-      if (index === reservationIndex) {
-        const newDate = new Date(reservation.date);
-        newDate.setDate(newDate.getDate() + direction);
-        return { ...reservation, date: newDate.toISOString().split('T')[0] };
+  const moveReservation = async (reservationId, direction) => {
+    try {
+      const reservation = reservations.find(r => r.id === reservationId);
+      if (!reservation) {
+        console.error('Reservation not found');
+        return;
       }
-      return reservation;
-    });
-    setReservations(updatedReservations);
+  
+      const currentDate = new Date(reservation.date);
+      currentDate.setDate(currentDate.getDate() + direction);
+      
+      const newDate = currentDate.toISOString().split('T')[0];
+      const time = reservation.time; // Assuming the time doesn't change
+  
+      const token = sessionStorage.getItem('accessToken');
+      const response = await axios.put(`${BASE_URL}/reservations/${reservationId}`, 
+        { date: newDate, time: time },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+  
+      if (response.data) {
+        setReservations(currentReservations => 
+          currentReservations.map(r => 
+            r.id === reservationId ? { ...r, date: response.data.date, time: response.data.time } : r
+          )
+        );
+        fetchReservations();
+      }
+    } catch (error) {
+      console.error('Error moving reservation:', error);
+    }
+  };
+
+  const deleteReservation = async (reservationId) => {
+    const reservationToDelete = reservations.find(r => r.id === reservationId);
+    const confirmMessage = `Are you sure you want to delete the reservation for ${reservationToDelete.name} on ${reservationToDelete.date} at ${reservationToDelete.time}?`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        const token = sessionStorage.getItem('accessToken');
+        await axios.delete(`${BASE_URL}/reservations/${reservationId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setReservations(reservations.filter(r => r.id !== reservationId));
+      } catch (error) {
+        console.error('Error deleting reservation:', error);
+      }
+    }
   };
 
   const moveReservations = (direction) => {
@@ -96,16 +136,6 @@ function AdminCalendar({ reservations: initialReservations }) {
       return reservation;
     });
     setReservations(updatedReservations);
-  };
-
-  const deleteReservation = (reservationIndex) => {
-    const reservationToDelete = reservations[reservationIndex];
-    const confirmMessage = `Are you sure you want to delete the reservation for ${reservationToDelete.name} on ${reservationToDelete.date} at ${reservationToDelete.time}?`;
-    
-    if (window.confirm(confirmMessage)) {
-      const updatedReservations = reservations.filter((_, index) => index !== reservationIndex);
-      setReservations(updatedReservations);
-    }
   };
 
   const deleteReservations = () => {
@@ -135,21 +165,18 @@ function AdminCalendar({ reservations: initialReservations }) {
       const token = sessionStorage.getItem('accessToken');
       const headers = { Authorization: `Bearer ${token}` };
   
-      // Fetch clients
-      const clientsResponse = await axios.get('http://localhost:5000/admin-calendar/clients', { headers });
-      setClients(clientsResponse.data);
-  
-      // Fetch psychologists
-      const psychologistsResponse = await axios.get('http://localhost:5000/admin-calendar/psychologists', { headers });
-      setPsychologists(psychologistsResponse.data);
+      const [clientsResponse, psychologistsResponse, roomsResponse] = await Promise.all([
+        axios.get(`${BASE_URL}/clients`, { headers }),
+        axios.get(`${BASE_URL}/psychologists`, { headers }),
+        axios.get(`${BASE_URL}/rooms`, { headers })
+      ]);
 
-      // Fetch rooms
-      const roomsResponse = await axios.get('http://localhost:5000/admin-calendar/rooms', { headers });
+      setClients(clientsResponse.data);
+      setPsychologists(psychologistsResponse.data);
       setRooms(roomsResponse.data);
-  
+      fetchReservations();
     } catch (error) {
       console.error('Error fetching data for reservation creation:', error);
-      // Handle error (e.g., show an error message to the user)
     }
   };
 
@@ -164,6 +191,7 @@ function AdminCalendar({ reservations: initialReservations }) {
       const createdReservation = response.data;
       setReservations([...reservations, createdReservation]);
       setIsCreatingReservation(false);
+      fetchReservations();
     } catch (error) {
       console.error('Error creating reservation:', error);
       // Handle error (e.g., show an error message to the user)
@@ -189,12 +217,17 @@ function AdminCalendar({ reservations: initialReservations }) {
             onChange={handleDateChange}
             selectRange={isRangeMode}
             tileContent={({ date, view }) => {
-              const dayReservations = getReservationsForRange(date, date);
-              return view === 'month' && dayReservations.length > 0 ? (
-                <div className="reservation-badge">
-                  {dayReservations.length} Reservations
-                </div>
-              ) : null;
+              if (view === 'month') {
+                const dayReservations = getReservationsForRange(date, new Date(date.getTime() + 86400000 - 1));
+                if (dayReservations.length > 0) {
+                  return (
+                    <div className="reservation-badge">
+                      {dayReservations.length}
+                    </div>
+                  );
+                }
+              }
+              return null;
             }}
           />
         </div>
@@ -221,25 +254,25 @@ function AdminCalendar({ reservations: initialReservations }) {
               </div>
               {reservationsToShow.length > 0 ? (
                 <ul>
-                  {reservationsToShow.map((reservation, index) => (
-                    <li key={index}>
-                      <strong>{reservation.formattedDate}</strong> {reservation.time} - {reservation.duration}h
-                      <br />
-                      <strong>Client:</strong> {reservation.name} ({reservation.email})
-                      <br />
-                      <strong>Psychologist:</strong> {reservation.psychologist}
-                      <br /> 
-                      <strong>Room:</strong> {reservation.room}
-                      <br />
-                      <strong>Status:</strong> {reservation.status}
-                      <div className="reservation-actions">
-                        <button onClick={() => moveReservation(index, -1)} className="move-btn">←</button>
-                        <button onClick={() => moveReservation(index, 1)} className="move-btn">→</button>
-                        <button onClick={() => moveReservation(index, 7)} className="move-btn">+7</button>
-                        <button onClick={() => deleteReservation(index)} className="delete-btn">Delete</button>
-                      </div>
-                    </li>
-                  ))}
+                 {reservationsToShow.map((reservation) => (
+                  <li key={reservation.id} className="reservation-item">
+                    <strong>{reservation.formattedDate}</strong> {reservation.time} - {reservation.duration}h
+                    <br />
+                    <strong>Client:</strong> {reservation.name} ({reservation.email})
+                    <br />
+                    <strong>Psychologist:</strong> {reservation.psychologist}
+                    <br /> 
+                    <strong>Room:</strong> {reservation.room}
+                    <br />
+                    <strong>Status:</strong> {reservation.status}
+                    <div className="reservation-actions">
+                      <button onClick={() => moveReservation(reservation.id, -1)} className="move-btn">←</button>
+                      <button onClick={() => moveReservation(reservation.id, 1)} className="move-btn">→</button>
+                      <button onClick={() => moveReservation(reservation.id, 7)} className="move-btn">+7</button>
+                      <button onClick={() => deleteReservation(reservation.id)} className="delete-btn">Delete</button>
+                    </div>
+                  </li>
+                ))}
                 </ul>
               ) : (
                 <p className="no-reservations">No reservations for this period.</p>

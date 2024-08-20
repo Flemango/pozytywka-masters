@@ -40,6 +40,77 @@ module.exports = (db) => {
     }
   });
 
+  router.put('/reservations/:id', async (req, res) => {
+    const { id } = req.params;
+    const { date, time, client_id, psychologist_id, room_id, duration, status } = req.body;
+  
+    try {
+      let updateQuery = 'UPDATE reservations SET ';
+      const updateValues = [];
+      const updateFields = [];
+  
+      if (date) {
+        if (time) {
+          updateFields.push('reservation_date = ?');
+          updateValues.push(`${date} ${time}`);
+        } else {
+          // If only date is provided, keep the existing time
+          updateFields.push('reservation_date = DATE_FORMAT(CONCAT(?, " ", TIME(reservation_date)), "%Y-%m-%d %H:%i:%s")');
+          updateValues.push(date);
+        }
+      }
+      // ... other fields ...
+  
+      if (updateFields.length === 0) {
+        return res.status(400).json({ message: 'No fields to update' });
+      }
+  
+      updateQuery += updateFields.join(', ') + ' WHERE id = ?';
+      updateValues.push(id);
+  
+      const [result] = await db.execute(updateQuery, updateValues);
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Reservation not found' });
+      }
+  
+      // Fetch the updated reservation
+      const [updatedReservation] = await db.execute(
+        `SELECT r.*, c.first_name AS client_first_name, c.last_name AS client_last_name, 
+                p.first_name AS psychologist_first_name, p.last_name AS psychologist_last_name,
+                rm.room_number
+         FROM reservations r
+         JOIN clients c ON r.client_id = c.id
+         JOIN psychologists p ON r.psychologist_id = p.id
+         JOIN rooms rm ON r.room_id = rm.id
+         WHERE r.id = ?`,
+        [id]
+      );
+  
+      res.json(updatedReservation[0]);
+    } catch (error) {
+      console.error('Error updating reservation:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  router.delete('/reservations/:id', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const [result] = await db.execute('DELETE FROM reservations WHERE id = ?', [id]);
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Reservation not found' });
+      }
+  
+      res.json({ message: 'Reservation deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting reservation:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Endpoint to get all clients for calendar
     router.get('/clients', async (req, res) => {
     try {
@@ -132,8 +203,7 @@ module.exports = (db) => {
     }
   });
   
-  // Updated reservation creation endpoint
-    router.post('/confirm-reservation', async (req, res) => {
+  router.post('/confirm-reservation', async (req, res) => {
     const { date, client_id, psychologist_id, room_id, time, duration } = req.body;
     if (!date || !client_id || !psychologist_id || !room_id || !time || !duration) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -141,8 +211,8 @@ module.exports = (db) => {
   
     try {
       const [result] = await db.execute(
-        'INSERT INTO reservations (reservation_date, client_id, psychologist_id, room_id, duration) VALUES (?, ?, ?, ?, ?)',
-        [`${date} ${time}`, client_id, psychologist_id, room_id, duration]
+        'INSERT INTO reservations (reservation_date, client_id, psychologist_id, room_id, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [`${date} ${time}`, client_id, psychologist_id, room_id, duration, 'confirmed']
       );
       
       // Fetch the created reservation

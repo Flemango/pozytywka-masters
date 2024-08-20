@@ -53,12 +53,15 @@
 .reservation-badge {
   background-color: #4caf50;
   color: white;
-  border-radius: 12px;
-  padding: 2px 8px;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 12px;
-  margin-top: 5px;
-  display: inline-block;
-  white-space: nowrap; /* Prevent text wrapping */
+  font-weight: bold;
+  margin: 0 auto;
 }
 
 .no-reservations {

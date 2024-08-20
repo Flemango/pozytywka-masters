@@ -18,9 +18,10 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
   const fetchAvailableHours = async () => {
     try {
       const token = sessionStorage.getItem('accessToken');
+      const formattedDate = formatDate(date);
       const response = await axios.get(`http://localhost:5000/admin-calendar/available-hours`, {
         params: {
-          date: date.toISOString().split('T')[0],
+          date: formattedDate,
           psychologist_id: selectedPsychologist
         },
         headers: { Authorization: `Bearer ${token}` }
@@ -32,9 +33,18 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
     }
   };
 
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleConfirm = () => {
+    const formattedDate = formatDate(date);
     onConfirm({
-      date: date.toISOString().split('T')[0],
+      date: formattedDate,
       client_id: selectedClient,
       psychologist_id: selectedPsychologist,
       room_id: selectedRoom,
