@@ -1,7 +1,7 @@
 const express = require('express');
 const { format } = require('date-fns'); // Make sure to install and import date-fns
 const router = express.Router();
-const db = require('../db'); // Adjust the path as necessary
+//const db = require('../db'); // Adjust the path as necessary
 
 module.exports = (db) => {
   router.get('/reservations', async (req, res) => {
@@ -40,7 +40,7 @@ module.exports = (db) => {
     }
   });
 
-  router.put('/reservations/:id', async (req, res) => {
+  router.put('/move-reservation/:id', async (req, res) => {
     const { id } = req.params;
     const { date, time, client_id, psychologist_id, room_id, duration, status } = req.body;
   
@@ -75,7 +75,7 @@ module.exports = (db) => {
       }
   
       // Fetch the updated reservation
-      const [updatedReservation] = await db.execute(
+      await db.execute(
         `SELECT r.*, c.first_name AS client_first_name, c.last_name AS client_last_name, 
                 p.first_name AS psychologist_first_name, p.last_name AS psychologist_last_name,
                 rm.room_number
@@ -87,14 +87,14 @@ module.exports = (db) => {
         [id]
       );
   
-      res.json(updatedReservation[0]);
+      res.json({ success: true });
     } catch (error) {
       console.error('Error updating reservation:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
 
-  router.delete('/reservations/:id', async (req, res) => {
+  router.delete('/del-reservation/:id', async (req, res) => {
     const { id } = req.params;
   
     try {
@@ -111,8 +111,115 @@ module.exports = (db) => {
     }
   });
 
+  router.put('/move-reservations', async (req, res) => {
+    const { reservationIds, direction } = req.body;
+    if (!reservationIds || !Array.isArray(reservationIds) || !direction) {
+      return res.status(400).json({ message: 'Invalid request body' });
+    }
+  
+    let connection;
+    try {
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+  
+      //const movedReservations = [];
+  
+      for (const id of reservationIds) {
+        // Fetch the current reservation
+        const [reservations] = await connection.execute(
+          'SELECT * FROM reservations WHERE id = ?',
+          [id]
+        );
+  
+        if (reservations.length === 0) {
+          continue; // Skip if reservation not found
+        }
+  
+        const reservation = reservations[0];
+        const currentDate = new Date(reservation.reservation_date);
+        currentDate.setDate(currentDate.getDate() + parseInt(direction));
+        
+        const newDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
+  
+        // Update the reservation
+        await connection.execute(
+          'UPDATE reservations SET reservation_date = ? WHERE id = ?',
+          [newDate, id]
+        );
+  
+        // Fetch the updated reservation
+        await connection.execute(
+          `SELECT r.*, c.first_name AS client_first_name, c.last_name AS client_last_name, 
+                  p.first_name AS psychologist_first_name, p.last_name AS psychologist_last_name,
+                  rm.room_number
+           FROM reservations r
+           JOIN clients c ON r.client_id = c.id
+           JOIN psychologists p ON r.psychologist_id = p.id
+           JOIN rooms rm ON r.room_id = rm.id
+           WHERE r.id = ?`,
+          [id]
+        );
+  
+        //movedReservations.push(updatedReservations[0]);
+      }
+  
+      await connection.commit();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error moving reservations:', error);
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch (rollbackError) {
+          console.error('Error rolling back transaction:', rollbackError);
+        }
+      }
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  });
+
+  router.delete('/del-reservations', async (req, res) => {
+    const { startDate, endDate } = req.body;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Start date and end date are required' });
+    }
+  
+    let connection;
+    try {
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+  
+      // Delete reservations within the date range
+      const [result] = await connection.execute(
+        'DELETE FROM reservations WHERE DATE(reservation_date) >= DATE(?) AND DATE(reservation_date) <= DATE(?)',
+        [startDate, endDate]
+      );
+  
+      await connection.commit();
+      res.json({ success: true, message: 'Reservations deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting reservations:', error);
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch (rollbackError) {
+          console.error('Error rolling back transaction:', rollbackError);
+        }
+      }
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  });
+
   // Endpoint to get all clients for calendar
-    router.get('/clients', async (req, res) => {
+  router.get('/clients', async (req, res) => {
     try {
       const [rows] = await db.execute('SELECT id, first_name, last_name FROM clients');
       res.json(rows);
@@ -120,10 +227,10 @@ module.exports = (db) => {
       console.error('Error fetching clients for calendar:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
-    });
+  });
   
   // Endpoint to get all psychologists for calendar
-    router.get('/psychologists', async (req, res) => {
+  router.get('/psychologists', async (req, res) => {
     try {
       const [rows] = await db.execute('SELECT id, first_name, last_name FROM psychologists');
       res.json(rows);
@@ -131,9 +238,9 @@ module.exports = (db) => {
       console.error('Error fetching psychologists for calendar:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
-    });
+  });
   
-    router.get('/available-hours', async (req, res) => {
+  router.get('/available-hours', async (req, res) => {
     const { date, psychologist_id } = req.query;
     if (!date || !psychologist_id) {
       return res.status(400).json({ message: 'Date and psychologist_id parameters are required' });
@@ -190,10 +297,10 @@ module.exports = (db) => {
       console.error('Error fetching available hours for calendar:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
-    });
+  });
   
   // New endpoint to get all rooms
-    router.get('/rooms', async (req, res) => {
+  router.get('/rooms', async (req, res) => {
     try {
       const [rooms] = await db.execute('SELECT id, room_number FROM rooms');
       res.json(rooms);

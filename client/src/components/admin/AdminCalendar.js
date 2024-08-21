@@ -91,17 +91,12 @@ function AdminCalendar() {
       const time = reservation.time; // Assuming the time doesn't change
   
       const token = sessionStorage.getItem('accessToken');
-      const response = await axios.put(`${BASE_URL}/reservations/${reservationId}`, 
+      const response = await axios.put(`${BASE_URL}/move-reservation/${reservationId}`, 
         { date: newDate, time: time },
         { headers: { Authorization: `Bearer ${token}` } }
       );
   
-      if (response.data) {
-        setReservations(currentReservations => 
-          currentReservations.map(r => 
-            r.id === reservationId ? { ...r, date: response.data.date, time: response.data.time } : r
-          )
-        );
+      if (response.data.success) {
         fetchReservations();
       }
     } catch (error) {
@@ -116,7 +111,7 @@ function AdminCalendar() {
     if (window.confirm(confirmMessage)) {
       try {
         const token = sessionStorage.getItem('accessToken');
-        await axios.delete(`${BASE_URL}/reservations/${reservationId}`, {
+        await axios.delete(`${BASE_URL}/del-reservation/${reservationId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setReservations(reservations.filter(r => r.id !== reservationId));
@@ -126,36 +121,62 @@ function AdminCalendar() {
     }
   };
 
-  const moveReservations = (direction) => {
-    const updatedReservations = reservations.map(reservation => {
-      if (isReservationSelected(reservation)) {
-        const newDate = new Date(reservation.date);
-        newDate.setDate(newDate.getDate() + direction);
-        return { ...reservation, date: newDate.toISOString().split('T')[0] };
+  const moveReservations = async (direction) => {
+    const reservationsToMove = reservations.filter(reservation => isReservationSelected(reservation));
+    const reservationIds = reservationsToMove.map(r => r.id);
+
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      const response = await axios.put(`${BASE_URL}/move-reservations`, 
+        { reservationIds, direction },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        fetchReservations();
+      } else {
+        console.error('Failed to move reservations:', response.data.message);
+        // Optionally, show an error message to the user
       }
-      return reservation;
-    });
-    setReservations(updatedReservations);
+    } catch (error) {
+      console.error('Error moving reservations:', error);
+      // Optionally, show an error message to the user
+    }
   };
 
-  const deleteReservations = () => {
+  const deleteReservations = async () => {
     let confirmMessage;
+    let startDate, endDate;
+    
+    const formatDate = (date) => {
+      const d = new Date(date);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().split('T')[0];
+    };
+  
     if (Array.isArray(selectedDates)) {
+      startDate = formatDate(selectedDates[0]);
+      endDate = formatDate(selectedDates[1]);
       confirmMessage = `Are you sure you want to delete all reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}?`;
     } else {
+      startDate = endDate = formatDate(selectedDates);
       confirmMessage = `Are you sure you want to delete all reservations for ${selectedDates.toDateString()}?`;
     }
   
     if (window.confirm(confirmMessage)) {
-      const updatedReservations = reservations.filter(reservation => {
-        const reservationDate = new Date(reservation.date);
-        if (Array.isArray(selectedDates)) {
-          return reservationDate < selectedDates[0] || reservationDate > selectedDates[1];
-        } else {
-          return !isSameDay(reservationDate, selectedDates);
-        }
-      });
-      setReservations(updatedReservations);
+      try {
+        const token = sessionStorage.getItem('accessToken');
+        await axios.delete(`${BASE_URL}/del-reservations`, {
+          data: { startDate, endDate },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Refresh reservations after successful deletion
+        fetchReservations();
+      } catch (error) {
+        console.error('Error deleting reservations:', error);
+        // Optionally, show an error message to the user
+      }
     }
   };
 
