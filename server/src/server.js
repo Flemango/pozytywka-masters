@@ -46,22 +46,35 @@ async function setup() {
 }
 
 app.post('/admin', async (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.isAdmin);
+  const { email, password } = req.body;
 
-  if (!user) {
-    return res.status(400).json({ message: 'User not found' });
+  try {
+    // Query the database for the psychologist with the given email
+    const [psychologists] = await db.execute(
+      'SELECT id, email, password, first_name, last_name FROM psychologists WHERE email = ?',
+      [email]
+    );
+
+    if (psychologists.length === 0) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const psychologist = psychologists[0];
+
+    //const isMatch = await bcrypt.compare(password, psychologist.password);
+    const isMatch = (password === psychologist.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    const accessToken = jwt.sign({ userId: psychologist.id, isAdmin: true }, secretKey, { expiresIn: expirationTime });
+
+    res.json({ accessToken });
+  } catch (error) {
+    console.error('Error during admin login:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    return res.status(401).json({ message: 'Invalid password' });
-  }
-
-  const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: expirationTime });
-
-  res.json({ accessToken });
 });
 
 app.post('/login', async (req, res) => {
@@ -115,12 +128,30 @@ app.get('/panel', authenticateToken, (req, res) => {
   res.json({});
 });
 
-app.get('/welcome', authenticateToken, (req, res) => {
-  const user = users.find(u => u.id === req.user.userId);
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+app.get('/welcome', authenticateToken, async (req, res) => {
+  try {
+    // Query the database for the psychologist with the given id
+    const [psychologists] = await db.execute(
+      'SELECT id, first_name FROM psychologists WHERE id = ?',
+      [req.user.userId]
+    );
+
+    if (psychologists.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const psychologist = psychologists[0];
+
+    res.json({ 
+      message: 'Welcome to the admin panel', 
+      user: { 
+        firstName: psychologist.first_name,
+      } 
+    });
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-  res.json({ message: 'Welcome to the admin panel', user: { firstName: user.firstName } });
 });
 
 app.get('/clients', authenticateToken, async (req, res) => {

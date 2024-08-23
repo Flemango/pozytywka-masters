@@ -5,7 +5,7 @@ import '../../components/SubmitForms.css';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
@@ -14,7 +14,7 @@ export default function AdminLogin() {
 
     try {
       const response = await Axios.post('http://localhost:5000/admin', {
-        username,
+        email,
         password,
       });
 
@@ -36,12 +36,13 @@ export default function AdminLogin() {
     <div className="admin-login-container">
       <form className="admin-login-form" onSubmit={handleSubmit}>
         <label>
-          Username:
+          Email:
           <input
-            type="username"
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
           <br />
           Password:
