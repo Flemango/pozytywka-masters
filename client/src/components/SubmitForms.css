@@ -26,8 +26,9 @@
 
   .login-container {
     margin-top: 5rem;
-    max-height: 350px;
+    max-height: 400px;
     min-width: 256px;
+    max-width: 256px;
   }
 
   .profile-page-container {

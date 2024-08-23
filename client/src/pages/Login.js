@@ -38,7 +38,7 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const response = await Axios.post('http://localhost:5000/login', {
+      const response = await Axios.post('http://localhost:5000/user-login', {
         email,
         password,
       });

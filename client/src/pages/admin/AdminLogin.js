@@ -13,7 +13,7 @@ export default function AdminLogin() {
     e.preventDefault();
 
     try {
-      const response = await Axios.post('http://localhost:5000/admin', {
+      const response = await Axios.post('http://localhost:5000/admin-login', {
         email,
         password,
       });

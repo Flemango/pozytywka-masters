@@ -45,7 +45,7 @@ async function setup() {
   }
 }
 
-app.post('/admin', async (req, res) => {
+app.post('/admin-login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -77,27 +77,43 @@ app.post('/admin', async (req, res) => {
   }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/user-login', async (req, res) => {
   const { email, password } = req.body;
-  const user = users.find(u => u.email === email && !u.isAdmin);
 
-  if (!user) {
-    return res.status(400).json({ message: 'User not found' });
+  try {
+    // Query the database for the client with the given email
+    const [clients] = await db.execute(
+      'SELECT id, email, password, first_name, last_name FROM clients WHERE email = ?',
+      [email]
+    );
+
+    if (clients.length === 0) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const client = clients[0];
+
+    //const isMatch = await bcrypt.compare(password, client.password);
+    const isMatch = (password === client.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    const accessToken = jwt.sign({ userId: client.id, isAdmin: false }, secretKey, { expiresIn: expirationTime });
+
+    res.json({ 
+      accessToken, 
+      user: {
+        email: client.email,
+        firstName: client.first_name,
+        lastName: client.last_name
+      } 
+    });
+  } catch (error) {
+    console.error('Error during user login:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    return res.status(401).json({ message: 'Invalid password' });
-  }
-
-  const accessToken = jwt.sign({ userId: user.id, isAdmin: user.isAdmin }, secretKey, { expiresIn: expirationTime });
-
-  res.json({ accessToken, user: {
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName
-  } });
 });
 
 const authenticateToken = (req, res, next) => {
@@ -117,6 +133,31 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+app.post('/change-password', authenticateToken, async (req, res) => {
+  const { userId, newPassword } = req.body;
+
+  // Ensure the authenticated user is changing their own password
+  if (userId !== req.user.userId) {
+    return res.status(403).json({ message: 'You can only change your own password' });
+  }
+
+  try {
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password in the database
+    await db.execute(
+      'UPDATE clients SET password = ? WHERE id = ?',
+      [hashedPassword, userId]
+    );
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 app.post('/refresh', authenticateToken, (req, res) => {
   const accessToken = jwt.sign({ userId: req.user.userId, isAdmin: req.user.isAdmin }, secretKey, { expiresIn: expirationTime });

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
+import Axios from 'axios';
 import '../components/SubmitForms.css';
 
 function ChangePassword() {
@@ -73,10 +74,9 @@ function ChangePassword() {
     setConfirmPassword(e.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Prevent submission if both fields are empty
     if (!password && !confirmPassword) {
       setErrors({ emptyFields: translations[language].emptyFieldsError });
       return;
@@ -91,9 +91,28 @@ function ChangePassword() {
     }
 
     if (Object.keys(errors).length === 0) {
-      // Implement password change logic here
-      alert(translations[language].successMessage);
-      navigate('/profile');
+      try {
+        const user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user'));
+        const token = sessionStorage.getItem('userAccessToken') || localStorage.getItem('userAccessToken');
+
+        if (!user || !token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await Axios.post('http://localhost:5000/change-password', 
+          { userId: user.id, newPassword: password },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.status === 200) {
+          window.alert(translations[language].successMessage);
+          navigate('/profile');
+        }
+      } catch (error) {
+        console.error('Error changing password:', error);
+        setErrors({ server: 'An error occurred while changing the password. Please try again.' });
+      }
     }
   };
 
