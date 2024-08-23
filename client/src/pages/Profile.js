@@ -2,6 +2,8 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
+import Axios from 'axios';
+
 import '../components/SubmitForms.css';
 
 function Profile() {
@@ -22,7 +24,9 @@ function Profile() {
       changePassword: 'Change Password',
       logout: 'Logout',
       deleteAccount: 'Delete Account',
-      accountDeletionAlert: 'Account deletion is not implemented yet.',
+      deleteAccountConfirm: 'Are you sure you want to delete your account? This action cannot be undone.',
+      deleteAccountSuccess: 'Your account has been successfully deleted.',
+      deleteAccountError: 'An error occurred while deleting your account. Please try again.',
     },
     PL: {
       yourProfile: 'Twój Profil',
@@ -32,7 +36,9 @@ function Profile() {
       changePassword: 'Zmień hasło',
       logout: 'Wyloguj się',
       deleteAccount: 'Usuń Konto',
-      accountDeletionAlert: 'Usuwanie konta nie zostało jeszcze zaimplementowane.',
+      deleteAccountConfirm: 'Czy na pewno chcesz usunąć swoje konto? Tej akcji nie można cofnąć.',
+      deleteAccountSuccess: 'Twoje konto zostało pomyślnie usunięte.',
+      deleteAccountError: 'Wystąpił błąd podczas usuwania konta. Proszę spróbować ponownie.',
     },
   };
 
@@ -47,6 +53,7 @@ function Profile() {
       const user = JSON.parse(localStorage.getItem('user')) || JSON.parse(sessionStorage.getItem('user'));
       if (user) {
         setUserData({
+            id: user.id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName
@@ -63,12 +70,28 @@ function Profile() {
     navigate('/login');
   };
 
-  const handleDeleteAccount = () => {
-    // Implement account deletion logic here
-    alert(translations[language].accountDeletionAlert);
-    // After deletion, redirect to the home or login page
-    handleLogout();
-    navigate('/login');
+  const handleDeleteAccount = async () => {
+    const confirmDelete = window.confirm(translations[language].deleteAccountConfirm);
+    
+    if (confirmDelete) {
+      try {
+        const token = localStorage.getItem('userAccessToken') || sessionStorage.getItem('userAccessToken');
+        
+        const response = await Axios.delete('http://localhost:5000/delete-account', {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { userId: userData.id } // Send userId in the request body
+        });
+
+        if (response.status === 200) {
+          alert(translations[language].deleteAccountSuccess);
+          handleLogout();
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        alert(translations[language].deleteAccountError);
+      }
+    }
   };
 
   const handleChangePassword = () => {

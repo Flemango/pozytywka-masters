@@ -222,6 +222,10 @@ input.invalid {
   margin-top: 10px;
 }
 
+.center-div {
+  margin-left: 48px;
+}
+
 .password-requirements p {
   margin: 5px 0;
 }

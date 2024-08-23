@@ -14,36 +14,14 @@ app.use(cors({origin: '*'}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true })) //przesylanie formularzami
 
-let refreshTokens = []
 let secretKey = process.env.ACCESS_TOKEN_SECRET;
 let expirationTime = '10m';
 
-const users = [
-  {
-    id: "1",
-    username: 'Kyle',
-    password: 'burrito123',
-    isAdmin: true,
-    firstName: 'Kyle',
-    lastName: 'Smith',
-    email: 'kyle@example.com'
-  },
-  {
-    id: "2",
-    username: 'Jim',
-    password: 'haslo',
-    isAdmin: false,
-    firstName: 'Jim',
-    lastName: 'Brown',
-    email: 'jim@example.com'
-  }
-];
-
-async function setup() {
-  for (let user of users) {
-    user.password = await bcrypt.hash(user.password, 10);
-  }
-}
+// async function setup() {
+//   for (let user of users) {
+//     user.password = await bcrypt.hash(user.password, 10);
+//   }
+// }
 
 app.post('/admin-login', async (req, res) => {
   const { email, password } = req.body;
@@ -93,8 +71,8 @@ app.post('/user-login', async (req, res) => {
 
     const client = clients[0];
 
-    //const isMatch = await bcrypt.compare(password, client.password);
-    const isMatch = (password === client.password);
+    const isMatch = await bcrypt.compare(password, client.password);
+    //const isMatch = (password === client.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password' });
@@ -105,6 +83,7 @@ app.post('/user-login', async (req, res) => {
     res.json({ 
       accessToken, 
       user: {
+        id: client.id,
         email: client.email,
         firstName: client.first_name,
         lastName: client.last_name
@@ -113,6 +92,38 @@ app.post('/user-login', async (req, res) => {
   } catch (error) {
     console.error('Error during user login:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/register', async (req, res) => {
+  const { email, firstName, lastName, password, phoneNumber } = req.body;
+
+  // Basic validation
+  if (!email || !firstName || !lastName || !password || !phoneNumber) {
+    return res.sendStatus(400);
+  }
+
+  try {
+    // Check if user already exists
+    const [existingUsers] = await db.execute('SELECT * FROM clients WHERE email = ?', [email]);
+    
+    if (existingUsers.length > 0) {
+      return res.sendStatus(400);
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new user into the database
+    await db.execute(
+      'INSERT INTO clients (email, first_name, last_name, password, phone_number) VALUES (?, ?, ?, ?, ?)',
+      [email, firstName, lastName, hashedPassword, phoneNumber]
+    );
+
+    res.sendStatus(201);
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.sendStatus(500);
   }
 });
 
@@ -155,6 +166,29 @@ app.post('/change-password', authenticateToken, async (req, res) => {
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error('Error changing password:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.delete('/delete-account', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Ensure the authenticated user is deleting their own account
+    if (userId !== req.user.userId) {
+      return res.status(403).json({ message: 'You can only delete your own account' });
+    }
+
+    // Delete the user from the database
+    const [result] = await db.execute('DELETE FROM clients WHERE id = ?', [userId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Account successfully deleted' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -254,6 +288,5 @@ app.get('/clients', authenticateToken, async (req, res) => {
 app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
 
 app.listen(PORT, () => {
-  console.log("Server started on port 5000")
-  setup();
+  console.log("Server started on port 5000");
 })
