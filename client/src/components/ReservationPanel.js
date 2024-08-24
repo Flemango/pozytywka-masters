@@ -1,9 +1,9 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { loadCaptchaEnginge, LoadCanvasTemplate, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
-
 import { LanguageContext } from '../context/LanguageContext';
 import ReservationCalendar, { openingHours } from './ReservationCalendar';
 import { format, isSameDay, parseISO } from 'date-fns';
+import Axios from 'axios';
 
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
@@ -21,65 +21,10 @@ function ReservationPanel() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedPsychologist, setSelectedPsychologist] = useState(null);
+  const [selectedPsychologist, setSelectedPsychologist] = useState('');
+  const [psychologists, setPsychologists] = useState([]);
+  const [workingHours, setWorkingHours] = useState({});
   const calendarRef = useRef(null);
-
-  const psychologists = [
-    { id: 1, name: 'Dr. Emily Brown' },
-    { id: 2, name: 'Dr. Michael Johnson' },
-    // Add more psychologists as needed
-  ];
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = sessionStorage.getItem('userAccessToken');
-      const rememberToken = localStorage.getItem('userAccessToken');
-      if (!token && !rememberToken) {
-        sessionStorage.removeItem('user');
-        return;
-      } else {
-        if (rememberToken) {
-          const savedUserData = JSON.parse(localStorage.getItem('user'));
-          if (savedUserData) {
-            setFirstName(savedUserData.firstName);
-            setLastName(savedUserData.lastName);
-            setEmail(savedUserData.email);
-            setIsLoggedIn(true);
-          }
-        }
-        else {
-          const userData = JSON.parse(sessionStorage.getItem('user'));
-          if (userData) {
-            setFirstName(userData.firstName);
-            setLastName(userData.lastName);
-            setEmail(userData.email);
-            setIsLoggedIn(true);
-          }
-        }
-      }
-    };
-
-    checkAuth();
-  }, []);
-  
-
-  const handleTimeSelect = (date, time) => {
-    const formattedDate = date.toISOString().split('T')[0];
-    setSelectedDate(formattedDate);
-    setSelectedTime(time);
-    setDate(formattedDate); // Update form input
-    setTime(time); // Update form input
-  };
-
-  useEffect(() => {
-    loadCaptchaEnginge(6,'white','#333'); 
-    setDate(selectedDate);
-    setTime(selectedTime);
-
-    if (psychologists.length > 0 && !selectedPsychologist) {
-      setSelectedPsychologist(psychologists[0].id);
-    }
-  }, [selectedDate, selectedTime]);
 
   const translations = {
     EN: {
@@ -112,11 +57,85 @@ function ReservationPanel() {
     }
   };
 
+  useEffect(() => {
+    const fetchPsychologists = async () => {
+      try {
+        const response = await Axios.get('http://localhost:5000/reservation-panel');
+        setPsychologists(response.data);
+        const hours = response.data.reduce((acc, psy) => {
+          acc[psy.id] = psy.workingHours;
+          return acc;
+        }, {});
+        setWorkingHours(hours);
+
+        if (response.data.length > 0) {
+          setSelectedPsychologist(response.data[0].id.toString());
+        }
+      } catch (error) {
+        console.error('Error fetching psychologists:', error);
+      }
+    };
+
+    fetchPsychologists();
+
+    const checkAuth = async () => {
+      const token = sessionStorage.getItem('userAccessToken');
+      const rememberToken = localStorage.getItem('userAccessToken');
+      if (!token && !rememberToken) {
+        sessionStorage.removeItem('user');
+        return;
+      } else {
+        if (rememberToken) {
+          const savedUserData = JSON.parse(localStorage.getItem('user'));
+          if (savedUserData) {
+            setFirstName(savedUserData.firstName);
+            setLastName(savedUserData.lastName);
+            setEmail(savedUserData.email);
+            setIsLoggedIn(true);
+          }
+        }
+        else {
+          const userData = JSON.parse(sessionStorage.getItem('user'));
+          if (userData) {
+            setFirstName(userData.firstName);
+            setLastName(userData.lastName);
+            setEmail(userData.email);
+            setIsLoggedIn(true);
+          }
+        }
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    loadCaptchaEnginge(6,'white','#333'); 
+    setDate(selectedDate);
+    setTime(selectedTime);
+
+    if (psychologists.length > 0 && !selectedPsychologist) {
+      setSelectedPsychologist(psychologists[0].id);
+    }
+  }, [selectedDate, selectedTime]);
+  
+  const handleTimeSelect = (date, time) => {
+    const formattedDate = date.toISOString().split('T')[0];
+    setSelectedDate(formattedDate);
+    setSelectedTime(time);
+    setDate(formattedDate); // Update form input
+    setTime(time); // Update form input
+  };
+
   const isDateTimeAvailable = (date, time) => {
     if (!selectedPsychologist) return false;
     const dayOfWeek = format(parseISO(date), 'EEEE');
-    const availableTimes = openingHours[selectedPsychologist]?.[dayOfWeek] || [];
-    return availableTimes.includes(time);
+    const dayHours = workingHours[selectedPsychologist]?.[dayOfWeek] || [];
+    return dayHours.some(hour => {
+      const startTime = hour.start;
+      const endTime = hour.end;
+      return time >= startTime && time < endTime;
+    });
   };
 
   const handleSubmit = (e) => {
@@ -192,12 +211,12 @@ function ReservationPanel() {
               {translations[language].psychologist}:
               <select
                 value={selectedPsychologist}
-                onChange={(e) => setSelectedPsychologist(parseInt(e.target.value))}
+                onChange={(e) => setSelectedPsychologist(e.target.value)}
                 required
               >
                 <option value="" disabled>Select a psychologist</option>
                 {psychologists.map(psychologist => (
-                  <option key={psychologist.id} value={psychologist.id}>
+                  <option key={psychologist.id} value={psychologist.id.toString()}>
                     {psychologist.name}
                   </option>
                 ))}
@@ -255,6 +274,7 @@ function ReservationPanel() {
       <ReservationCalendar 
         onTimeSelect={handleTimeSelect} 
         selectedPsychologist={selectedPsychologist}
+        workingHours={workingHours}
       />
       </div>
     </div>

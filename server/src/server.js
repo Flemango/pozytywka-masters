@@ -127,6 +127,61 @@ app.post('/register', async (req, res) => {
   }
 });
 
+app.get('/reservation-panel', async (req, res) => {
+  try {
+    // First, fetch all psychologists
+    const [psychologists] = await db.execute(`
+      SELECT id, first_name, last_name
+      FROM psychologists
+    `);
+
+    // Then, fetch working hours for all psychologists
+    const [workingHours] = await db.execute(`
+      SELECT 
+        psychologist_id,
+        CASE day_of_week
+          WHEN 0 THEN 'Sunday'
+          WHEN 1 THEN 'Monday'
+          WHEN 2 THEN 'Tuesday'
+          WHEN 3 THEN 'Wednesday'
+          WHEN 4 THEN 'Thursday'
+          WHEN 5 THEN 'Friday'
+          WHEN 6 THEN 'Saturday'
+        END AS day_name,
+        TIME_FORMAT(start_time, '%H:%i') AS start_time,
+        TIME_FORMAT(end_time, '%H:%i') AS end_time
+      FROM psychologist_working_hours
+    `);
+
+    // Process the data
+    const formattedPsychologists = psychologists.map(p => {
+      const hours = workingHours
+        .filter(wh => wh.psychologist_id === p.id)
+        .reduce((acc, wh) => {
+          if (!acc[wh.day_name]) {
+            acc[wh.day_name] = [];
+          }
+          acc[wh.day_name].push({
+            start: wh.start_time,
+            end: wh.end_time
+          });
+          return acc;
+        }, {});
+
+      return {
+        id: p.id,
+        name: `${p.first_name} ${p.last_name}`,
+        workingHours: hours
+      };
+    });
+
+    res.json(formattedPsychologists);
+  } catch (error) {
+    console.error('Error fetching psychologists:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
