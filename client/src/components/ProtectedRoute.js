@@ -18,7 +18,7 @@ const ProtectedRoute = ({ element: Component }) => {
       }
 
       try {
-        const response = await Axios.get('http://localhost:5000/panel', {
+        const response = await Axios.get('http://localhost:5000/admin/panel', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.status === 200) {

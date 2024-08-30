@@ -1,8 +1,8 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { loadCaptchaEnginge, LoadCanvasTemplate, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
+import { loadCaptchaEnginge, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
 import { LanguageContext } from '../context/LanguageContext';
-import ReservationCalendar, { openingHours } from './ReservationCalendar';
-import { format, isSameDay, parseISO } from 'date-fns';
+import ReservationCalendar from './ReservationCalendar';
+import { format, parseISO } from 'date-fns';
 import Axios from 'axios';
 
 import 'react-calendar/dist/Calendar.css';

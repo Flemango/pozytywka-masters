@@ -37,7 +37,7 @@ const AdminPanel = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await Axios.get('http://localhost:5000/welcome', {
+        const response = await Axios.get('http://localhost:5000/admin/welcome', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         setMessage(response.data.message);

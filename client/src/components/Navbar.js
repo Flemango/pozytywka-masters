@@ -1,6 +1,6 @@
 // src/components/Navbar.js
 import React, { useContext, useState, useEffect } from 'react';
-import { Link, redirect, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
 import './Navbar.css';
 
@@ -9,7 +9,6 @@ function Navbar() {
   const { language, toggleLanguage } = useContext(LanguageContext);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);

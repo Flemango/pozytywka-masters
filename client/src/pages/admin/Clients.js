@@ -14,7 +14,7 @@ const Clients = () => {
     const fetchClients = async () => {
       try {
         const token = sessionStorage.getItem('accessToken');
-        const response = await Axios.get('http://localhost:5000/clients', {
+        const response = await Axios.get('http://localhost:5000/admin/clients', {
           headers: { Authorization: `Bearer ${token}` },
         });
 

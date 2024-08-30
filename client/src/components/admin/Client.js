@@ -13,7 +13,16 @@ const Client = ({ client, onDelete }) => {
     const confirmed = window.confirm("Are you sure you want to delete the client's data?");
     if (confirmed) {
       try {
-        await Axios.delete(`http://localhost:5000/clients/${client.id}`);
+        const token = sessionStorage.getItem('accessToken');
+
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        await Axios.delete(`http://localhost:5000/admin/clients/${client.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
         onDelete(client.id);
       } catch (error) {
         console.error("Error deleting client:", error);
