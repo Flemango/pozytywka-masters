@@ -138,11 +138,31 @@ function ReservationPanel() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateCaptcha(captcha)) {
       if (isDateTimeAvailable(date, time)) {
-        setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
+        try {
+          const response = await Axios.post('http://localhost:5000/create-reservation', 
+            {
+              firstName,
+              lastName,
+              email,
+              psychologistId: selectedPsychologist,
+              date,
+              time
+            }
+          );
+  
+          if (response.status === 201) {
+            setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
+          } else {
+            setMessage('Reservation failed. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error creating reservation:', error);
+          setMessage('An error occurred. Please try again.');
+        }
       } else {
         setMessage(translations[language].invalidDateTime);
       }

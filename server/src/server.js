@@ -178,6 +178,44 @@ app.get('/reservation-panel', async (req, res) => {
   }
 });
 
+app.post('/create-reservation', async (req, res) => {
+  const { firstName, lastName, email, psychologistId, date, time } = req.body;
+  const duration = 1; // Default 1 hour reservation
+
+  try {
+    // Check if client exists
+    let [existingClients] = await db.execute('SELECT id FROM clients WHERE email = ?', [email]);
+    
+    let clientId;
+    if (existingClients.length > 0) {
+      clientId = existingClients[0].id;
+    } else {
+      // Create new client
+      const [result] = await db.execute(
+        'INSERT INTO clients (first_name, last_name, email) VALUES (?, ?, ?)',
+        [firstName, lastName, email]
+      );
+      clientId = result.insertId;
+    }
+
+    // Create the reservation
+    const reservationDate = `${date} ${time}`;
+    const [reservationResult] = await db.execute(
+      'INSERT INTO reservations (client_id, psychologist_id, room_id, reservation_date, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [clientId, psychologistId, 1, reservationDate, duration, 'Pending'] // Assuming room_id 1 for now
+    );
+
+    if (reservationResult.affectedRows > 0) {
+      res.status(201).json({ message: 'Reservation created successfully' });
+    } else {
+      res.status(400).json({ message: 'Failed to create reservation' });
+    }
+  } catch (error) {
+    console.error('Error creating reservation:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
