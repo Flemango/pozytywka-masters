@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { loadCaptchaEnginge, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
+import { useNavigate } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
 import ReservationCalendar from './ReservationCalendar';
 import { format, parseISO } from 'date-fns';
@@ -25,6 +26,7 @@ function ReservationPanel() {
   const [psychologists, setPsychologists] = useState([]);
   const [workingHours, setWorkingHours] = useState({});
   const [duration, setDuration] = useState(1); // Default to 1 hour
+  const navigate = useNavigate();
   const calendarRef = useRef(null);
 
   const translations = {
@@ -166,7 +168,18 @@ function ReservationPanel() {
           );
   
           if (response.status === 201) {
-            setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time} for ${duration} hour(s)`);
+            navigate('/confirmation', { 
+                state: { 
+                    reservationDetails: {
+                        firstName,
+                        lastName,
+                        email,
+                        date,
+                        time,
+                        duration
+                    } 
+                } 
+            });
           } else {
             setMessage('Reservation failed. Please try again.');
           }

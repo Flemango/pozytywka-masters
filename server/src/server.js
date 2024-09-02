@@ -6,6 +6,7 @@ const PORT = 5000;
 const bcrypt = require("bcryptjs")
 const cors = require("cors")
 const jwt = require("jsonwebtoken")
+const nodemailer = require('nodemailer');
 
 const db = require('./db');
 const adminRoutes = require('./routes/adminRoutes')(db);
@@ -17,6 +18,44 @@ app.use(express.urlencoded({ extended: true })) //przesylanie formularzami
 
 let secretKey = process.env.ACCESS_TOKEN_SECRET;
 let expirationTime = '10m';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',  // Replace with your email service
+  auth: {
+      user: process.env.EMAIL_USER,  // Set these in your .env file
+      pass: process.env.EMAIL_PASS
+  }
+});
+
+app.post('/send-confirmation-email', async (req, res) => {
+  const { firstName, lastName, email, date, time, duration } = req.body;
+
+  const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Reservation Confirmation',
+      text: `Dear ${firstName} ${lastName},
+
+Thank you for your reservation. Here are the details:
+
+Date: ${date}
+Time: ${time}
+Duration: ${duration} hour(s)
+
+Please confirm this reservation by replying to this email.
+
+Best regards,
+Your Clinic Team`
+  };
+
+  try {
+      await transporter.sendMail(mailOptions);
+      res.status(200).send('Confirmation email sent');
+  } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).send('Error sending confirmation email');
+  }
+});
 
 app.post('/admin-login', async (req, res) => {
   const { email, password } = req.body;

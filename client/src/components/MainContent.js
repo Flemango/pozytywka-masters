@@ -14,6 +14,7 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Profile from '../pages/Profile';
 import ChangePassword from '../pages/ChangePassword';
+import ConfirmReservation from '../pages/ConfirmReservation';
 
 const MainContent = () => {
 
@@ -32,6 +33,7 @@ const MainContent = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/confirmation" element={<ConfirmReservation />} />
 
           <Route path="/admin" element={<AdminLogin />} />
         </Routes>
