@@ -24,6 +24,7 @@ function ReservationPanel() {
   const [selectedPsychologist, setSelectedPsychologist] = useState('');
   const [psychologists, setPsychologists] = useState([]);
   const [workingHours, setWorkingHours] = useState({});
+  const [duration, setDuration] = useState(1); // Default to 1 hour
   const calendarRef = useRef(null);
 
   const translations = {
@@ -119,14 +120,6 @@ function ReservationPanel() {
     }
   }, [selectedDate, selectedTime]);
   
-  const handleTimeSelect = (date, time) => {
-    const formattedDate = date.toISOString().split('T')[0];
-    setSelectedDate(formattedDate);
-    setSelectedTime(time);
-    setDate(formattedDate); // Update form input
-    setTime(time); // Update form input
-  };
-
   const isDateTimeAvailable = (date, time) => {
     if (!selectedPsychologist) return false;
     const dayOfWeek = format(parseISO(date), 'EEEE');
@@ -136,6 +129,23 @@ function ReservationPanel() {
       const endTime = hour.end;
       return time >= startTime && time < endTime;
     });
+  };
+
+  const handleTimeSelect = (date, selectedTime, selectedDuration) => {
+    // Ensure we're working with the correct date in the local timezone
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    const formattedDate = format(localDate, 'yyyy-MM-dd');
+    
+    setSelectedDate(formattedDate);
+    setSelectedTime(selectedTime);
+    setDate(formattedDate);
+    setTime(selectedTime);
+    setDuration(selectedDuration);
+  };
+
+  const getDisplayTime = () => {
+    if (!time) return '';
+    return `${time} - ${duration}h`;
   };
 
   const handleSubmit = async (e) => {
@@ -150,12 +160,13 @@ function ReservationPanel() {
               email,
               psychologistId: selectedPsychologist,
               date,
-              time
+              time,
+              duration
             }
           );
   
           if (response.status === 201) {
-            setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time}`);
+            setMessage(`${translations[language].confirmation} ${firstName} ${lastName} on ${date} at ${time} for ${duration} hour(s)`);
           } else {
             setMessage('Reservation failed. Please try again.');
           }
@@ -259,11 +270,9 @@ function ReservationPanel() {
               <label>
                 {translations[language].time}:
                 <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  //readOnly
-                  onKeyDown={preventTyping}
+                  type="text"
+                  value={getDisplayTime()}
+                  readOnly
                   onFocus={handleFocus}
                   required
                 />

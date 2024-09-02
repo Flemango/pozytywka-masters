@@ -179,8 +179,8 @@ app.get('/reservation-panel', async (req, res) => {
 });
 
 app.post('/create-reservation', async (req, res) => {
-  const { firstName, lastName, email, psychologistId, date, time } = req.body;
-  const duration = 1; // Default 1 hour reservation
+  const { firstName, lastName, email, psychologistId, date, time, duration } = req.body;
+  //const duration = 1; // Default 1 hour reservation
 
   try {
     // Check if client exists
@@ -216,6 +216,7 @@ app.post('/create-reservation', async (req, res) => {
   }
 });
 
+///
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -233,6 +234,12 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+app.post('/refresh', authenticateToken, (req, res) => {
+  const accessToken = jwt.sign({ userId: req.user.userId, isAdmin: req.user.isAdmin }, secretKey, { expiresIn: expirationTime });
+
+  res.json({ accessToken });
+});
 
 app.post('/change-password', authenticateToken, async (req, res) => {
   const { userId, newPassword } = req.body;
@@ -282,12 +289,23 @@ app.delete('/delete-account', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/refresh', authenticateToken, (req, res) => {
-  const accessToken = jwt.sign({ userId: req.user.userId, isAdmin: req.user.isAdmin }, secretKey, { expiresIn: expirationTime });
+app.get('/get-reservations', async (req, res) => {
+  const { psychologistId, date } = req.query;
 
-  res.json({ accessToken });
+  try {
+    const [reservations] = await db.execute(
+      'SELECT * FROM reservations WHERE psychologist_id = ? AND DATE(reservation_date) = ?',
+      [psychologistId, date]
+    );
+
+    res.json(reservations);
+  } catch (error) {
+    console.error('Error fetching reservations:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
+///
 app.use('/admin', authenticateToken, adminRoutes);
 
 app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);

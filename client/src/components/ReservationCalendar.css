@@ -15,36 +15,49 @@
   color: #ccc !important;
 }
 
-.available-times {
+.available-times, .duration-options {
   margin-top: 20px;
-  max-width: 328.4px; /* Ensuring the grid does not exceed the width of the calendar */
+  max-width: 328.4px;
   margin-left: 10px;
   margin-right: 10px;
 }
 
-.available-times h3 {
+.available-times h3, .duration-options h3 {
   margin: 0 0 10px;
   text-align: center;
 }
 
-.available-times ul {
+.available-times ul, .duration-options ul {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 columns to fit the calendar width */
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   list-style-type: none;
   padding: 0;
+  justify-content: center;
 }
 
-.available-times li {
-  background: #4CAF50; /* Green background */
+.available-times li, .duration-options li, .go-back-button {
+  background: #4CAF50;
   padding: 10px;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   text-align: center;
-  color: white; /* White text for better contrast */
+  color: white;
+  border: none;
+  font-size: 1em;
 }
 
-.available-times li:hover {
+.available-times li:hover, .duration-options li:hover, .go-back-button:hover {
   background-color: #45a049;
+}
+
+.duration-options ul {
+  grid-template-columns: repeat(3, 1fr); /* 3 columns for duration options */
+}
+
+.go-back-button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
 }

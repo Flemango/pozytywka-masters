@@ -2,32 +2,58 @@ import React, { useContext, useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO, addHours, isWithinInterval, parse, isBefore } from 'date-fns';
 import { LanguageContext } from '../context/LanguageContext';
+import axios from 'axios';
 
 const translations = {
   EN: {
     avail_hours: 'Available hours on ',
     no_avail: 'No available hours.',
-    select_psychologist: 'Please select a psychologist.'
+    select_psychologist: 'Please select a psychologist.',
+    select_duration: 'Select duration:',
+    go_back: 'Go back',
+    hour: 'hour',
+    hours: 'hours'
   },
   PL: {
     avail_hours: 'Wolne terminy dla ',
     no_avail: 'Brak wolnych terminów.',
-    select_psychologist: 'Proszę wybrać psychologa.'
+    select_psychologist: 'Proszę wybrać psychologa.',
+    select_duration: 'Wybierz czas trwania:',
+    go_back: 'Wróć',
+    hour: 'godzina',
+    hours: 'godziny'
   }
 };
-
-const reservations = [
-  { date: new Date(2023, 6, 21), time: '15:00', psychologistId: 1 },
-  { date: new Date(2023, 6, 21), time: '16:00', psychologistId: 1 },
-  { date: new Date(2023, 6, 22), time: '15:00', psychologistId: 2 },
-];
 
 const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours }) => {
   const [date, setDate] = useState(new Date());
   const [availableTimes, setAvailableTimes] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [availableDurations, setAvailableDurations] = useState([]);
   const { language } = useContext(LanguageContext);
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      if (selectedPsychologist) {
+        try {
+          const response = await axios.get(`http://localhost:5000/get-reservations`, {
+            params: {
+              psychologistId: selectedPsychologist,
+              date: format(date, 'yyyy-MM-dd')
+            }
+          });
+          setReservations(response.data);
+        } catch (error) {
+          console.error('Error fetching reservations:', error);
+        }
+      }
+    };
+
+    fetchReservations();
+  }, [selectedPsychologist, date]);
 
   useEffect(() => {
     if (selectedPsychologist) {
@@ -36,28 +62,32 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
       
       let allTimes = [];
       dayHours.forEach(hour => {
-        let currentTime = new Date(`1970-01-01T${hour.start}`);
-        const endTime = new Date(`1970-01-01T${hour.end}`);
-        while (currentTime < endTime) {
+        let currentTime = parse(hour.start, 'HH:mm', new Date());
+        const endTime = parse(hour.end, 'HH:mm', new Date());
+        while (isBefore(currentTime, endTime)) {
           allTimes.push(format(currentTime, 'HH:mm'));
-          currentTime.setMinutes(currentTime.getMinutes() + 60); // Assuming 1-hour slots
+          currentTime = addHours(currentTime, 1);
         }
       });
 
-      const reservedTimes = reservations
-        .filter(reservation => 
-          isSameDay(reservation.date, date) && 
-          reservation.psychologistId === selectedPsychologist
-        )
-        .map(reservation => reservation.time);
+      const reservedIntervals = reservations.map(reservation => {
+        const start = new Date(`${reservation.reservation_date}`);
+        const end = addHours(start, reservation.duration);
+        return { start, end };
+      });
 
-      const timesAvailable = allTimes.filter(time => !reservedTimes.includes(time));
+      const timesAvailable = allTimes.filter(time => {
+        const timeSlot = parse(`${format(date, 'yyyy-MM-dd')} ${time}`, 'yyyy-MM-dd HH:mm', new Date());
+        return !reservedIntervals.some(interval => 
+          isWithinInterval(timeSlot, { start: interval.start, end: interval.end })
+        );
+      });
 
       setAvailableTimes(timesAvailable);
     } else {
       setAvailableTimes([]);
     }
-  }, [date, selectedPsychologist, workingHours]);
+  }, [date, selectedPsychologist, workingHours, reservations]);
 
   const isDateDisabled = ({ date }) => {
     if (!selectedPsychologist) return true;
@@ -67,18 +97,36 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
     if (dayHours.length === 0) return true;
 
     const reservedTimes = reservations.filter(reservation => 
-      isSameDay(reservation.date, date) && 
-      reservation.psychologistId === selectedPsychologist
+      isSameDay(parseISO(reservation.reservation_date), date)
     );
 
     // Calculate total available hours
     const totalHours = dayHours.reduce((total, hour) => {
-      const start = new Date(`1970-01-01T${hour.start}`);
-      const end = new Date(`1970-01-01T${hour.end}`);
-      return total + (end - start) / (1000 * 60 * 60);
+      const start = parse(hour.start, 'HH:mm', new Date());
+      const end = parse(hour.end, 'HH:mm', new Date());
+      return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     }, 0);
 
     return reservedTimes.length >= totalHours;
+  };
+
+  const handleTimeClick = (time) => {
+    setSelectedTime(time);
+    const dayOfWeek = format(date, 'EEEE');
+    const dayHours = workingHours[selectedPsychologist]?.[dayOfWeek] || [];
+    const endTime = parse(dayHours[dayHours.length - 1].end, 'HH:mm', new Date());
+    const selectedDateTime = parse(time, 'HH:mm', new Date());
+    const hoursUntilEnd = Math.floor((endTime.getTime() - selectedDateTime.getTime()) / (1000 * 60 * 60));
+    setAvailableDurations(Array.from({length: Math.min(hoursUntilEnd, 3)}, (_, i) => i + 1));
+  };
+
+  const handleDurationSelect = (duration) => {
+    onTimeSelect(date, selectedTime, duration);
+    setSelectedTime(null);
+  };
+
+  const handleGoBack = () => {
+    setSelectedTime(null);
   };
 
   return (
@@ -88,13 +136,29 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
         value={date}
         tileDisabled={isDateDisabled}
       />
-      <div className="available-times">
-        <h3>{translations[language].avail_hours}{format(date, 'yyyy-MM-dd')}</h3>
+      <div className={selectedTime ? "duration-options" : "available-times"}>
+        <h3>
+          {selectedTime 
+            ? translations[language].select_duration
+            : `${translations[language].avail_hours}${format(date, 'yyyy-MM-dd')}`
+          }
+        </h3>
         {selectedPsychologist ? (
-          availableTimes.length > 0 ? (
+          selectedTime ? (
+            <>
+              <ul>
+                {availableDurations.map(duration => (
+                  <li key={duration} onClick={() => handleDurationSelect(duration)}>
+                    {duration} {duration === 1 ? translations[language].hour : translations[language].hours}
+                  </li>
+                ))}
+              </ul>
+              <button className="go-back-button" onClick={handleGoBack}>{translations[language].go_back}</button>
+            </>
+          ) : availableTimes.length > 0 ? (
             <ul>
               {availableTimes.map(time => (
-                <li key={time} onClick={() => onTimeSelect(date, time)}>{time}</li>
+                <li key={time} onClick={() => handleTimeClick(time)}>{time}</li>
               ))}
             </ul>
           ) : (
