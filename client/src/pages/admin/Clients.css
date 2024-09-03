@@ -9,11 +9,19 @@ h1 {
     margin: 0;
 }
 
-.header-container input {
+.header-container input, .psychologist-details input {
     margin: 0.5rem;
     padding: 0.5rem;
     border-radius: 5px;
     border: 1px solid #ccc;
     width: 256px;
     box-sizing: border-box;
+}
+
+.psychologist-details input {
+    width: 96px;
+}
+
+.right-side-container {
+    justify-content: right;
 }

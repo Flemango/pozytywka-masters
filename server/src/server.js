@@ -73,8 +73,8 @@ app.post('/admin-login', async (req, res) => {
 
     const psychologist = psychologists[0];
 
-    //const isMatch = await bcrypt.compare(password, psychologist.password);
-    const isMatch = (password === psychologist.password);
+    const isMatch = await bcrypt.compare(password, psychologist.password);
+    //const isMatch = (password === psychologist.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password' });

@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require("bcryptjs")
 const router = express.Router();
 
 module.exports = (db) => {
@@ -92,10 +93,8 @@ module.exports = (db) => {
         const clientId = req.params.id;
     
         try {
-          // First, delete all reservations associated with this client
           await db.execute('DELETE FROM reservations WHERE client_id = ?', [clientId]);
     
-          // Then, delete the client
           const [result] = await db.execute('DELETE FROM clients WHERE id = ?', [clientId]);
     
           if (result.affectedRows === 0) {
@@ -107,6 +106,102 @@ module.exports = (db) => {
           console.error('Error deleting client:', error);
           res.status(500).json({ message: 'Internal server error' });
         }
+    });
+
+    router.get('/psychologists', async (req, res) => {
+      try {
+        const [psychologists] = await db.execute(`
+          SELECT p.id, p.first_name, p.last_name, p.email, p.phone_number, p.specialization
+          FROM psychologists p
+        `);
+  
+        res.json(psychologists);
+      } catch (error) {
+        console.error('Error fetching psychologists:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+  
+    router.delete('/psychologists/:id', async (req, res) => {
+      const clientId = req.params.id;
+    
+      try {
+        // First, delete all reservations associated with this client
+        //await db.execute('DELETE FROM reservations WHERE client_id = ?', [clientId]);
+  
+        const [result] = await db.execute('DELETE FROM psychologists WHERE id = ?', [clientId]);
+  
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: 'Psychologist not found' });
+        }
+  
+        res.status(200).json({ message: 'Psychologist successfully deleted' });
+      } catch (error) {
+        console.error('Error deleting psychologist:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+
+    router.get('/psychologists/:id/hours', async (req, res) => {
+  try {
+    const [hours] = await db.execute(
+      'SELECT * FROM psychologist_working_hours WHERE psychologist_id = ?',
+      [req.params.id]
+    );
+    res.json(hours);
+  } catch (error) {
+    console.error('Error fetching working hours:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+    });
+
+    router.post('/psychologists/:id/hours', async (req, res) => {
+      const psychologistId = req.params.id;
+      const { hours } = req.body;
+    
+      if (!Array.isArray(hours)) {
+        return res.status(400).json({ message: 'Invalid hours format' });
+      }
+    
+      try {
+        // First, delete existing hours for this psychologist
+        await db.execute('DELETE FROM psychologist_working_hours WHERE psychologist_id = ?', [psychologistId]);
+    
+        // Then, insert the new hours
+        for (const hour of hours) {
+          if (hour.start_time && hour.end_time) {
+            await db.execute(
+              'INSERT INTO psychologist_working_hours (psychologist_id, day_of_week, start_time, end_time) VALUES (?, ?, ?, ?)',
+              [psychologistId, hour.day_of_week, hour.start_time, hour.end_time]
+            );
+          }
+        }
+    
+        res.json({ message: 'Working hours updated successfully' });
+      } catch (error) {
+        console.error('Error saving working hours:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+
+    router.post('/add-psychologist', async (req, res) => {
+      const { first_name, last_name, email, password, phone_number, specialization } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      try {
+        const [result] = await db.execute(
+          'INSERT INTO psychologists (first_name, last_name, email, password, phone_number, specialization) VALUES (?, ?, ?, ?, ?, ?)',
+          [first_name, last_name, email, hashedPassword, phone_number, specialization]
+        );
+    
+        res.status(201).json({
+          message: 'Psychologist created successfully',
+          id: result.insertId
+        });
+      } catch (error) {
+        console.error('Error creating psychologist:', error);
+        res.status(500).json({ message: 'Error creating psychologist' });
+      }
     });
 
   return router;
