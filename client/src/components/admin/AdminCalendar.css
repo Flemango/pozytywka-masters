@@ -148,7 +148,7 @@
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
-  margin: 4px 2px;
+  margin: 0;
   cursor: pointer;
   border-radius: 50%;
 }
@@ -191,4 +191,18 @@
 .reservation-creator-actions button:last-child {
   background-color: #f44336;
   color: white;
+}
+
+.reservation-controls {
+  display: flex;
+  align-items: center;
+}
+
+.psychologist-filter {
+  margin-right: 10px;
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  width: 200px;
+  box-sizing: border-box;
 }

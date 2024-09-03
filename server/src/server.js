@@ -20,7 +20,7 @@ let secretKey = process.env.ACCESS_TOKEN_SECRET;
 let expirationTime = '10m';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',  // Replace with your email service
+  service: 'wp.pl',  // Replace with your email service
   auth: {
       user: process.env.EMAIL_USER,  // Set these in your .env file
       pass: process.env.EMAIL_PASS

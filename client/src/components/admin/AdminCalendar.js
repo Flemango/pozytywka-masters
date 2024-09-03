@@ -15,18 +15,33 @@ function AdminCalendar() {
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [clients, setClients] = useState([]);
   const [psychologists, setPsychologists] = useState([]);
+  const [selectedPsychologist, setSelectedPsychologist] = useState('');
   const [availableHours, setAvailableHours] = useState([]);
   const [rooms, setRooms] = useState([]);
   
   useEffect(() => {
     fetchReservations();
+    fetchPsychologists();
   }, []);
+
+  const fetchPsychologists = async () => {
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      const response = await axios.get(`${BASE_URL}/psychologists`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPsychologists(response.data);
+    } catch (error) {
+      console.error('Error fetching psychologists:', error);
+    }
+  };
 
   const fetchReservations = async () => {
     try {
       const token = sessionStorage.getItem('accessToken');
       const response = await axios.get(`${BASE_URL}/reservations`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params: { psychologistId: selectedPsychologist }
       });
       setReservations(response.data);
     } catch (error) {
@@ -44,18 +59,26 @@ function AdminCalendar() {
     setSelectedDates(new Date());
   };
 
-  const getReservationsForRange = (start, end) => {
-    return reservations.filter(reservation => {
+  const getReservationsForRange = (start, end, filteredReservations = reservations) => {
+    return filteredReservations.filter(reservation => {
       const reservationDate = new Date(reservation.date);
       return reservationDate >= start && reservationDate <= end;
     });
   };
 
   const getReservationsToShow = () => {
+    let filteredReservations = reservations;
+    
+    if (selectedPsychologist) {
+      filteredReservations = reservations.filter(reservation => 
+        reservation.psychologist.id === selectedPsychologist.id
+      );
+    }
+
     if (Array.isArray(selectedDates)) {
-      return getReservationsForRange(selectedDates[0], selectedDates[1]);
+      return getReservationsForRange(selectedDates[0], selectedDates[1], filteredReservations);
     } else {
-      return reservations.filter(reservation => 
+      return filteredReservations.filter(reservation => 
         isSameDay(new Date(reservation.date), selectedDates)
       );
     }
@@ -171,11 +194,9 @@ function AdminCalendar() {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        // Refresh reservations after successful deletion
         fetchReservations();
       } catch (error) {
         console.error('Error deleting reservations:', error);
-        // Optionally, show an error message to the user
       }
     }
   };
@@ -204,18 +225,16 @@ function AdminCalendar() {
   const handleConfirmReservation = async (newReservation) => {
     try {
       const token = sessionStorage.getItem('accessToken');
-      const response = await axios.post('http://localhost:5000/admin-calendar/confirm-reservation', newReservation, {
+      const response = await axios.post(`${BASE_URL}/confirm-reservation`, newReservation, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Assuming the backend returns the created reservation
       const createdReservation = response.data;
       setReservations([...reservations, createdReservation]);
       setIsCreatingReservation(false);
       fetchReservations();
     } catch (error) {
       console.error('Error creating reservation:', error);
-      // Handle error (e.g., show an error message to the user)
     }
   };
 
@@ -223,12 +242,25 @@ function AdminCalendar() {
     setIsCreatingReservation(false);
   };
 
+  const handlePsychologistChange = (e) => {
+    setSelectedPsychologist(e.target.value);
+  };
+
+  useEffect(() => {
+    fetchReservations();
+  }, [selectedPsychologist]);
+
   const moveLeft = () => moveReservations(-1);
   const moveRight = () => moveReservations(1);
   const moveWeekForward = () => moveReservations(7);
 
   const reservationsToShow = getReservationsToShow();
   
+  const formatDate = (date) => {
+    const options = { month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  };
+
   return (
     <div>
       <div className="admin-calendar">
@@ -266,12 +298,26 @@ function AdminCalendar() {
           ) : (
             <>
               <div className="reservation-header">
-                <h2>
-                  {isRangeMode && Array.isArray(selectedDates)
-                    ? `Reservations from ${selectedDates[0].toDateString()} to ${selectedDates[1].toDateString()}`
-                    : `Reservations for ${selectedDates.toDateString()}`}
-                </h2>
-                <button className="add-reservation-btn" onClick={handleAddReservation}>+</button>
+              <h2>
+                {isRangeMode && Array.isArray(selectedDates)
+                  ? `${formatDate(selectedDates[0])} - ${formatDate(selectedDates[1])}`
+                  : formatDate(selectedDates)}
+              </h2>
+                <div className="reservation-controls">
+                  <select 
+                    value={selectedPsychologist} 
+                    onChange={handlePsychologistChange}
+                    className="psychologist-filter"
+                  >
+                    <option value="">All Psychologists</option>
+                    {psychologists.map(psych => (
+                      <option key={psych.id} value={psych.id}>
+                        {`${psych.first_name} ${psych.last_name}`}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="add-reservation-btn" onClick={handleAddReservation}>+</button>
+                </div>
               </div>
               {reservationsToShow.length > 0 ? (
                 <ul>

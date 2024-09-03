@@ -6,7 +6,9 @@ const router = express.Router();
 module.exports = (db) => {
   router.get('/reservations', async (req, res) => {
     try {
-      const [reservations] = await db.execute(
+      const { psychologistId } = req.query;
+      
+      let query = 
         'SELECT r.id, r.reservation_date, r.status, r.duration, ' +
         'c.first_name AS client_first_name, c.last_name AS client_last_name, c.email AS client_email, ' +
         'p.first_name AS psychologist_first_name, p.last_name AS psychologist_last_name, ' +
@@ -14,9 +16,16 @@ module.exports = (db) => {
         'FROM reservations r ' +
         'JOIN clients c ON r.client_id = c.id ' +
         'JOIN psychologists p ON r.psychologist_id = p.id ' +
-        'JOIN rooms ro ON r.room_id = ro.id'
-      );
-
+        'JOIN rooms ro ON r.room_id = ro.id';
+  
+      const params = [];
+      if (psychologistId) {
+        query += ' WHERE r.psychologist_id = ?';
+        params.push(psychologistId);
+      }
+  
+      const [reservations] = await db.execute(query, params);
+  
       const transformedReservations = reservations.map(reservation => {
         const reservationDate = new Date(reservation.reservation_date);
         return {
