@@ -111,9 +111,10 @@ module.exports = (db) => {
     router.get('/psychologists', async (req, res) => {
       try {
         const [psychologists] = await db.execute(`
-          SELECT p.id, p.first_name, p.last_name, p.email, p.phone_number, p.specialization
+          SELECT p.*, r.room_number as preferred_room_number
           FROM psychologists p
-        `);
+          LEFT JOIN rooms r ON p.preferred_room_id = r.id
+    `);
   
         res.json(psychologists);
       } catch (error) {
@@ -190,7 +191,7 @@ module.exports = (db) => {
 
       try {
         const [result] = await db.execute(
-          'INSERT INTO psychologists (first_name, last_name, email, password, phone_number, specialization) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT INTO psychologists (first_name, last_name, email, password, phone_number, specialization, preferred_room_id) VALUES (?, ?, ?, ?, ?, ?, NULL)',
           [first_name, last_name, email, hashedPassword, phone_number, specialization]
         );
     

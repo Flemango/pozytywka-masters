@@ -84,18 +84,20 @@ const Psychologists = () => {
   return (
     <div>
       <div className="header-container">
-        <h1>Psychologist List</h1>
         {!isAddingPsychologist && (
-          <div className="right-side-container">
-            <button onClick={handleAddPsychologist} className="add-psychologist-btn">+</button>
-            <input
-              type="text"
-              placeholder="Search by name"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="search-input"
-            />
-          </div>
+          <>
+            <h1>Psychologist List</h1>
+            <div className="search-add-container">
+              <input
+                type="text"
+                placeholder="Search by name"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="search-input"
+              />
+              <button onClick={handleAddPsychologist} className="add-psychologist-btn">+</button>
+            </div>
+          </>
         )}
       </div>
       {isAddingPsychologist ? (

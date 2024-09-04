@@ -237,11 +237,22 @@ app.post('/create-reservation', async (req, res) => {
       clientId = result.insertId;
     }
 
+    // Check if psychologist has a preferred room
+    const [psychologistResult] = await db.execute(
+      'SELECT preferred_room_id FROM psychologists WHERE id = ?',
+      [psychologistId]
+    );
+
+    let roomId = 1; // Default room_id
+    if (psychologistResult.length > 0 && psychologistResult[0].preferred_room_id) {
+      roomId = psychologistResult[0].preferred_room_id;
+    }
+
     // Create the reservation
     const reservationDate = `${date} ${time}`;
     const [reservationResult] = await db.execute(
       'INSERT INTO reservations (client_id, psychologist_id, room_id, reservation_date, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [clientId, psychologistId, 1, reservationDate, duration, 'Pending'] // Assuming room_id 1 for now
+      [clientId, psychologistId, roomId, reservationDate, duration, 'Pending'] // Assuming room_id 1 for now
     );
 
     if (reservationResult.affectedRows > 0) {

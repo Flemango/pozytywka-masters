@@ -103,6 +103,7 @@ const Psychologist = ({ psychologist, onDelete }) => {
           <p><strong>Email:</strong> {psychologist.email}</p>
           <p><strong>Phone Number:</strong> {psychologist.phone_number}</p>
           <p><strong>Specialization:</strong> {psychologist.specialization}</p>
+          <p><strong>Preferred Room:</strong> {psychologist.preferred_room_number || 'Not assigned'}</p>
           <h4>Working Hours:</h4>
           <ul className="working-hours-list">
             {daysOfWeek.map(day => (
