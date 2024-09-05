@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import Axios from 'axios';
 import './Psychologist.css';
 
-const Psychologist = ({ psychologist, onDelete }) => {
+const Psychologist = ({ psychologist: initialPsychologist, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [workingHours, setWorkingHours] = useState({});
   const [isEditingHours, setIsEditingHours] = useState(false);
   const [editedHours, setEditedHours] = useState({});
+  const [psychologist, setPsychologist] = useState(initialPsychologist);
+  const [editingField, setEditingField] = useState(null);
+  const [editedValue, setEditedValue] = useState('');
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -61,7 +64,7 @@ const Psychologist = ({ psychologist, onDelete }) => {
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEditHours = () => {
     setIsEditingHours(false);
     setEditedHours({...workingHours});
   };
@@ -92,6 +95,57 @@ const Psychologist = ({ psychologist, onDelete }) => {
     }));
   };
 
+  const handleEditField = (field, value) => {
+    setEditingField(field);
+    setEditedValue(value);
+  };
+
+  const handleSaveField = async () => {
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      await Axios.patch(`http://localhost:5000/admin/psychologists/${psychologist.id}`, {
+        [editingField]: editedValue
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPsychologist(prev => ({ ...prev, [editingField]: editedValue }));
+      setEditingField(null);
+      setEditedValue('');
+    } catch (error) {
+      console.error("Error saving psychologist detail:", error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+    setEditedValue('');
+  };
+
+  const renderEditableField = (field, label) => {
+    const isEditing = editingField === field;
+    return (
+      <p className="editable-field" key={field}>
+        <strong>{label}: </strong> 
+        {isEditing ? (
+          <>
+            <input 
+              value={editedValue} 
+              onChange={(e) => setEditedValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSaveField()}
+            />
+            <button onClick={handleSaveField}>Save</button>
+            <button onClick={handleCancelEdit}>Cancel</button>
+          </>
+        ) : (
+          <span className="editable-value">
+            {psychologist[field]}
+            <button className="edit-button" onClick={() => handleEditField(field, psychologist[field])}>Edit</button>
+          </span>
+        )}
+      </p>
+    );
+  };
+
   return (
     <div className="psychologist-container">
       <div className="psychologist-header" onClick={toggleExpand}>
@@ -100,11 +154,14 @@ const Psychologist = ({ psychologist, onDelete }) => {
       </div>
       {isExpanded && (
         <div className="psychologist-details">
-          <p><strong>Email:</strong> {psychologist.email}</p>
-          <p><strong>Phone Number:</strong> {psychologist.phone_number}</p>
-          <p><strong>Specialization:</strong> {psychologist.specialization}</p>
+          {renderEditableField('first_name', 'First Name')}
+          {renderEditableField('last_name', 'Last Name')}
+          {renderEditableField('email', 'Email')}
+          {renderEditableField('phone_number', 'Phone Number')}
+          {renderEditableField('specialization', 'Specialization')}
           <p><strong>Preferred Room:</strong> {psychologist.preferred_room_number || 'Not assigned'}</p>
-          <h4>Working Hours:</h4>
+
+          <h3>Working Hours:</h3>
           <ul className="working-hours-list">
             {daysOfWeek.map(day => (
               <li key={day}>
@@ -136,10 +193,10 @@ const Psychologist = ({ psychologist, onDelete }) => {
           </ul>
           <div className="button-container">
             <button className="edit-hours-button" onClick={handleEditHours}>
-              {isEditingHours ? 'Save' : 'Edit Hours'}
+              {isEditingHours ? 'Save Hours' : 'Edit Hours'}
             </button>
             {isEditingHours && (
-              <button className="cancel-edit-button" onClick={handleCancelEdit}>
+              <button className="cancel-edit-button" onClick={handleCancelEditHours}>
                 Cancel
               </button>
             )}

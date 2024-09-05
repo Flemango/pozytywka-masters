@@ -9,7 +9,7 @@ h1 {
     margin: 0;
 }
 
-.header-container input, .psychologist-details input {
+.header-container input, .psychologist-details input, .editable-field input {
     margin: 0.5rem;
     padding: 0.5rem;
     border-radius: 5px;
@@ -18,7 +18,7 @@ h1 {
     box-sizing: border-box;
 }
 
-.psychologist-details input {
+.working-hours-row input {
     width: 96px;
 }
 

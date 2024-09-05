@@ -94,3 +94,40 @@
   .time-inputs, .time-display {
     justify-self: start;
   }
+
+  .editable-field {
+    position: relative;
+    padding: 5px 0;
+    margin: 0;
+  }
+  
+  .editable-value {
+    display: inline-block;
+    padding-right: 50px;
+  }
+  
+  .edit-button, .editable-field button {
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    border: 0;
+    padding: 5px;
+    margin-left: 5px;
+  }
+
+  .edit-button {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .editable-field:hover .edit-button {
+    opacity: 1;
+  }
+  
+  .editable-field input {
+    margin-right: 5px;
+  }
+
+  .editable-field button:hover {
+    background-color: #45a049;
+  }

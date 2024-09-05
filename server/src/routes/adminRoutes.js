@@ -89,6 +89,36 @@ module.exports = (db) => {
         }
     });
 
+    router.patch('/clients/:id', async (req, res) => {
+      const { id } = req.params;
+      const updateData = req.body;
+  
+      try {
+        // Validate that only allowed fields are being updated
+        const allowedFields = ['first_name', 'last_name', 'email', 'phone_number'];
+        const fieldToUpdate = Object.keys(updateData)[0];
+  
+        if (!allowedFields.includes(fieldToUpdate)) {
+          return res.status(400).json({ message: 'Invalid field for update' });
+        }
+  
+        // Construct the SQL query
+        const query = `UPDATE clients SET ${fieldToUpdate} = ? WHERE id = ?`;
+        const values = [updateData[fieldToUpdate], id];
+  
+        const [result] = await db.execute(query, values);
+  
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: 'Client not found' });
+        }
+  
+        res.json({ message: 'Client updated successfully' });
+      } catch (error) {
+        console.error('Error updating client:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+
     router.delete('/clients/:id', async (req, res) => {
         const clientId = req.params.id;
     
@@ -119,6 +149,36 @@ module.exports = (db) => {
         res.json(psychologists);
       } catch (error) {
         console.error('Error fetching psychologists:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+
+    router.patch('/psychologists/:id', async (req, res) => {
+      const { id } = req.params;
+      const updateData = req.body;
+    
+      try {
+        // Validate that only allowed fields are being updated
+        const allowedFields = ['first_name', 'last_name', 'email', 'phone_number', 'specialization'];
+        const fieldToUpdate = Object.keys(updateData)[0];
+    
+        if (!allowedFields.includes(fieldToUpdate)) {
+          return res.status(400).json({ message: 'Invalid field for update' });
+        }
+    
+        // Construct the SQL query
+        const query = `UPDATE psychologists SET ${fieldToUpdate} = ? WHERE id = ?`;
+        const values = [updateData[fieldToUpdate], id];
+    
+        const [result] = await db.execute(query, values);
+    
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: 'Psychologist not found' });
+        }
+    
+        res.json({ message: 'Psychologist updated successfully' });
+      } catch (error) {
+        console.error('Error updating psychologist:', error);
         res.status(500).json({ message: 'Internal server error' });
       }
     });
