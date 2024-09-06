@@ -6,15 +6,16 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
   const [selectedPsychologist, setSelectedPsychologist] = useState('');
   const [selectedHour, setSelectedHour] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
-  const [appointmentLength, setAppointmentLength] = useState('1');
+  const [appointmentLength, setAppointmentLength] = useState('');
   const [availableHours, setAvailableHours] = useState([]);
   const [availableDurations, setAvailableDurations] = useState([]);
   const [existingReservations, setExistingReservations] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
 
   useEffect(() => {
     if (selectedPsychologist) {
       fetchAvailableHours();
-      fetchExistingReservations();
+      fetchAllReservations();
     }
   }, [selectedPsychologist, date]);
 
@@ -23,6 +24,12 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
       updateAvailableDurations();
     }
   }, [selectedHour, availableHours, existingReservations]);
+
+  useEffect(() => {
+    if (appointmentLength) {
+      updateAvailableRooms();
+    }
+  }, [appointmentLength, selectedHour, existingReservations]);
 
   const fetchAvailableHours = async () => {
     try {
@@ -42,20 +49,19 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
     }
   };
 
-  const fetchExistingReservations = async () => {
+  const fetchAllReservations = async () => {
     try {
       const token = sessionStorage.getItem('accessToken');
       const formattedDate = formatDate(date);
       const response = await axios.get(`http://localhost:5000/admin-calendar/existing-reservations`, {
         params: {
-          date: formattedDate,
-          psychologist_id: selectedPsychologist
+          date: formattedDate
         },
         headers: { Authorization: `Bearer ${token}` }
       });
       setExistingReservations(response.data);
     } catch (error) {
-      console.error('Error fetching existing reservations:', error);
+      console.error('Error fetching all reservations:', error);
       // Handle error (e.g., show an error message to the user)
     }
   };
@@ -66,11 +72,9 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
     const selectedTime = new Date(`${formatDate(date)}T${selectedHour}`);
     const durations = [];
   
-    // Loop over durations from 1 hour to 3 hours
     for (let i = 1; i <= 3; i++) {
-      const endTime = new Date(selectedTime.getTime() + i * 60 * 60 * 1000); // Calculate end time for each duration
+      const endTime = new Date(selectedTime.getTime() + i * 60 * 60 * 1000);
 
-      // Check if every hour within the reservation is available
       let isAvailable = true;
       for (let j = 0; j < i; j++) {
         const currentTime = new Date(selectedTime.getTime() + j * 60 * 60 * 1000);
@@ -84,13 +88,13 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
   
       if (!isAvailable) break;
   
-      // Adjust the collision logic to check each hour for overlap with existing reservations
       const hasCollision = existingReservations.some(reservation => {
-        const reservationStart = new Date(`${formatDate(date)}T${reservation.time}`);
-        const reservationEnd = new Date(reservationStart.getTime() + reservation.duration * 60 * 60 * 1000);
-  
-        // Allow the new reservation to end exactly when another starts or start exactly when another ends
-        return !(endTime <= reservationStart || selectedTime >= reservationEnd);
+        if (reservation.psychologist_id === selectedPsychologist) {
+          const reservationStart = new Date(`${formatDate(date)}T${reservation.time}`);
+          const reservationEnd = new Date(reservationStart.getTime() + reservation.duration * 60 * 60 * 1000);
+          return !(endTime <= reservationStart || selectedTime >= reservationEnd);
+        }
+        return false;
       });
   
       if (hasCollision) break;
@@ -99,12 +103,30 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
     }
   
     setAvailableDurations(durations);
-  
-    if (!durations.includes(appointmentLength)) {
-      setAppointmentLength(durations[0] || '');
-    }
+    setAppointmentLength('');
   };
-  
+
+  const updateAvailableRooms = () => {
+    if (!selectedHour || !appointmentLength) return;
+
+    const selectedTime = new Date(`${formatDate(date)}T${selectedHour}`);
+    const endTime = new Date(selectedTime.getTime() + parseInt(appointmentLength) * 60 * 60 * 1000);
+
+    const availableRooms = rooms.filter(room => {
+      const roomIsAvailable = !existingReservations.some(reservation => {
+        const reservationStart = new Date(`${formatDate(date)}T${reservation.time}`);
+        const reservationEnd = new Date(reservationStart.getTime() + reservation.duration * 60 * 60 * 1000);
+        return (
+          reservation.room_id === room.id &&
+          !(endTime <= reservationStart || selectedTime >= reservationEnd)
+        );
+      });
+      return roomIsAvailable;
+    });
+
+    setAvailableRooms(availableRooms);
+    setSelectedRoom('');
+  };
 
   const formatDate = (date) => {
     const d = new Date(date);
@@ -164,14 +186,15 @@ function ReservationCreator({ date, clients, psychologists, rooms, onConfirm, on
       <select 
         value={selectedRoom} 
         onChange={(e) => setSelectedRoom(e.target.value)}
+        disabled={!appointmentLength}
       >
         <option value="">Select Room</option>
-        {rooms.map(room => (
+        {availableRooms.map(room => (
           <option key={room.id} value={room.id}>{room.room_number}</option>
         ))}
       </select>
       <div className="reservation-creator-actions">
-        <button onClick={handleConfirm} disabled={!selectedClient || !selectedPsychologist || !selectedHour || !appointmentLength}>Confirm Reservation</button>
+        <button onClick={handleConfirm} disabled={!selectedClient || !selectedPsychologist || !selectedHour || !appointmentLength || !selectedRoom}>Confirm Reservation</button>
         <button onClick={onCancel}>Cancel</button>
       </div>
     </div>

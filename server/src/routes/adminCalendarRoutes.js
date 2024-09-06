@@ -308,39 +308,28 @@ module.exports = (db) => {
     }
   });
 
-  router.get('/existing-reservations', async (req, res) => {
-    const { date, psychologist_id } = req.query;
-    if (!date || !psychologist_id) {
-      return res.status(400).json({ message: 'Date and psychologist_id parameters are required' });
+  router.get('/all-reservations', async (req, res) => {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ message: 'Date parameter is required' });
     }
   
     try {
-      // Fetch existing reservations
       const [reservations] = await db.execute(
         `SELECT 
           TIME_FORMAT(reservation_date, '%H:%i') as time,
           duration,
-          status,
-          client_id,
+          psychologist_id,
           room_id
          FROM reservations
-         WHERE DATE(reservation_date) = ? AND psychologist_id = ?
+         WHERE DATE(reservation_date) = ?
          ORDER BY reservation_date ASC`,
-        [date, psychologist_id]
+        [date]
       );
   
-      // Format the reservations data
-      const formattedReservations = reservations.map(reservation => ({
-        time: reservation.time,
-        duration: reservation.duration,
-        status: reservation.status,
-        client_id: reservation.client_id,
-        room_id: reservation.room_id
-      }));
-  
-      res.json(formattedReservations);
+      res.json(reservations);
     } catch (error) {
-      console.error('Error fetching existing reservations:', error);
+      console.error('Error fetching all reservations:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
