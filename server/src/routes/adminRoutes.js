@@ -265,5 +265,67 @@ module.exports = (db) => {
       }
     });
 
+    router.get('/rooms', async (req, res) => {
+      try {
+        const [rooms] = await db.execute('SELECT * FROM rooms');
+        res.json(rooms);
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+  
+    // Create a new room
+    router.post('/rooms', async (req, res) => {
+      const { room_number, capacity } = req.body;
+      try {
+        const [result] = await db.execute(
+          'INSERT INTO rooms (room_number, capacity) VALUES (?, ?)',
+          [room_number, capacity]
+        );
+        res.status(201).json({ id: result.insertId, message: 'Room created successfully' });
+      } catch (error) {
+        console.error('Error creating room:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+  
+    // Update a room
+    router.patch('/rooms/:id', async (req, res) => {
+      const { id } = req.params;
+      const updateData = req.body;
+      try {
+        const allowedFields = ['room_number', 'capacity'];
+        const fieldToUpdate = Object.keys(updateData)[0];
+        if (!allowedFields.includes(fieldToUpdate)) {
+          return res.status(400).json({ message: 'Invalid field for update' });
+        }
+        const query = `UPDATE rooms SET ${fieldToUpdate} = ? WHERE id = ?`;
+        const [result] = await db.execute(query, [updateData[fieldToUpdate], id]);
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: 'Room not found' });
+        }
+        res.json({ message: 'Room updated successfully' });
+      } catch (error) {
+        console.error('Error updating room:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+  
+    // Delete a room
+    router.delete('/rooms/:id', async (req, res) => {
+      const { id } = req.params;
+      try {
+        const [result] = await db.execute('DELETE FROM rooms WHERE id = ?', [id]);
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: 'Room not found' });
+        }
+        res.json({ message: 'Room deleted successfully' });
+      } catch (error) {
+        console.error('Error deleting room:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+    });
+
   return router;
 };

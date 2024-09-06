@@ -1,0 +1,30 @@
+.room-container {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .room-header {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.33);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  
+  .arrow {
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+  }
+  
+  .arrow.expanded {
+    transform: rotate(90deg);
+  }
+  
+  .room-details {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-top: 1px solid #ccc;
+  }
