@@ -159,7 +159,7 @@ module.exports = (db) => {
     
       try {
         // Validate that only allowed fields are being updated
-        const allowedFields = ['first_name', 'last_name', 'email', 'phone_number', 'specialization'];
+        const allowedFields = ['first_name', 'last_name', 'email', 'phone_number', 'specialization', 'preferred_room_id'];
         const fieldToUpdate = Object.keys(updateData)[0];
     
         if (!allowedFields.includes(fieldToUpdate)) {

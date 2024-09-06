@@ -10,6 +10,7 @@ const Psychologist = ({ psychologist: initialPsychologist, onDelete }) => {
   const [psychologist, setPsychologist] = useState(initialPsychologist);
   const [editingField, setEditingField] = useState(null);
   const [editedValue, setEditedValue] = useState('');
+  const [rooms, setRooms] = useState([]);
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -17,6 +18,7 @@ const Psychologist = ({ psychologist: initialPsychologist, onDelete }) => {
     if (isExpanded && Object.keys(workingHours).length === 0) {
       fetchWorkingHours();
     }
+    fetchRooms();
   }, [isExpanded]);
 
   const fetchWorkingHours = async () => {
@@ -37,8 +39,43 @@ const Psychologist = ({ psychologist: initialPsychologist, onDelete }) => {
     }
   };
 
+  const fetchRooms = async () => {
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      const response = await Axios.get(`http://localhost:5000/admin/rooms`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Sort rooms by room number
+      const sortedRooms = response.data.sort((a, b) => {
+        return parseInt(a.room_number) - parseInt(b.room_number);
+      });
+      setRooms(sortedRooms);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+    }
+  };
+
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handlePreferredRoomChange = async (e) => {
+    const newPreferredRoomId = e.target.value;
+    try {
+      const token = sessionStorage.getItem('accessToken');
+      await Axios.patch(`http://localhost:5000/admin/psychologists/${psychologist.id}`, {
+        preferred_room_id: newPreferredRoomId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPsychologist(prev => ({ 
+        ...prev, 
+        preferred_room_id: newPreferredRoomId,
+        preferred_room_number: rooms.find(room => room.id.toString() === newPreferredRoomId)?.room_number || 'Not assigned'
+      }));
+    } catch (error) {
+      console.error("Error updating preferred room:", error);
+    }
   };
 
   const handleDelete = async () => {
@@ -159,8 +196,20 @@ const Psychologist = ({ psychologist: initialPsychologist, onDelete }) => {
           {renderEditableField('email', 'Email')}
           {renderEditableField('phone_number', 'Phone Number')}
           {renderEditableField('specialization', 'Specialization')}
-          <p><strong>Preferred Room:</strong> {psychologist.preferred_room_number || 'Not assigned'}</p>
-
+          <p>
+            <strong>Preferred Room:</strong>
+            <select 
+              value={psychologist.preferred_room_id || ''}
+              onChange={handlePreferredRoomChange}
+            >
+              <option value="">Not assigned</option>
+              {rooms.map(room => (
+                <option key={room.id} value={room.id}>
+                  {room.room_number}
+                </option>
+              ))}
+            </select>
+          </p>
           <h3>Working Hours:</h3>
           <ul className="working-hours-list">
             {daysOfWeek.map(day => (

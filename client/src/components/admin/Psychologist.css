@@ -131,3 +131,12 @@
   .editable-field button:hover {
     background-color: #45a049;
   }
+
+  p select {
+    margin: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 96px;
+    box-sizing: border-box;
+  }
