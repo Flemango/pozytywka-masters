@@ -22,6 +22,7 @@
   box-shadow: 0 -8px -32px 0 rgba(46, 46, 48, 0.37);
   border-radius: 10px;
   overflow-y: auto; /* Handle any potential overflow within this section */
+  max-height: 670px;
 }
 
 .admin-calendar .react-calendar {

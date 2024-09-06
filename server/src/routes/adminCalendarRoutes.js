@@ -308,7 +308,7 @@ module.exports = (db) => {
     }
   });
 
-  router.get('/all-reservations', async (req, res) => {
+  router.get('/existing-reservations', async (req, res) => {
     const { date } = req.query;
     if (!date) {
       return res.status(400).json({ message: 'Date parameter is required' });
