@@ -7,6 +7,41 @@ const bcrypt = require("bcryptjs")
 const cors = require("cors")
 const jwt = require("jsonwebtoken")
 const nodemailer = require('nodemailer');
+const { spawn } = require('child_process');
+
+/////////////////////////////////
+const path = require('path');
+const pythonExecutable = path.join('myenv', 'Scripts', 'python.exe');
+const testScript = path.join('.', 'src', 'ai', 'RNN.py');
+
+console.log(`Using Python executable: ${pythonExecutable}`);
+// Test data
+const testData = {
+  name: "Test User",
+  age: 30
+};
+
+// Spawn Python process
+const pythonProcess = spawn(pythonExecutable, [testScript, JSON.stringify(testData)]);
+
+// Handle Python process output
+pythonProcess.stdout.on('data', (data) => {
+  console.log(`Python script output: ${data}`);
+});
+
+pythonProcess.stderr.on('data', (data) => {
+  console.error(`Python script error: ${data}`);
+});
+
+pythonProcess.on('close', (code) => {
+  console.log(`Python process exited with code ${code}`);
+});
+
+pythonProcess.on('error', (error) => {
+  console.error(`Error spawning Python process: ${error}`);
+});
+
+////////////////////////////
 
 const db = require('./db');
 const adminRoutes = require('./routes/adminRoutes')(db);
@@ -217,6 +252,22 @@ app.get('/reservation-panel', async (req, res) => {
   }
 });
 
+app.get('/get-reservations', async (req, res) => {
+  const { psychologistId, date } = req.query;
+
+  try {
+    const [reservations] = await db.execute(
+      'SELECT * FROM reservations WHERE psychologist_id = ? AND DATE(reservation_date) = ?',
+      [psychologistId, date]
+    );
+
+    res.json(reservations);
+  } catch (error) {
+    console.error('Error fetching reservations:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 app.post('/create-reservation', async (req, res) => {
   const { firstName, lastName, email, psychologistId, date, time, duration } = req.body;
   //const duration = 1; // Default 1 hour reservation
@@ -265,6 +316,7 @@ app.post('/create-reservation', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 ///
 const authenticateToken = (req, res, next) => {
@@ -339,26 +391,68 @@ app.delete('/delete-account', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/get-reservations', async (req, res) => {
-  const { psychologistId, date } = req.query;
-
-  try {
-    const [reservations] = await db.execute(
-      'SELECT * FROM reservations WHERE psychologist_id = ? AND DATE(reservation_date) = ?',
-      [psychologistId, date]
-    );
-
-    res.json(reservations);
-  } catch (error) {
-    console.error('Error fetching reservations:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
 
 ///
 app.use('/admin', authenticateToken, adminRoutes);
 
 app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
+
+
+///
+// app.get('/get-reservation-suggestion', authenticateToken, async (req, res) => {
+//   const { userId } = req.user;
+
+//   try {
+//     // Fetch user's reservations
+//     const [reservations] = await db.execute(
+//       'SELECT psychologist_id, DAYOFWEEK(reservation_date) as day, HOUR(reservation_date) as time, duration FROM reservations WHERE client_id = ? ORDER BY reservation_date',
+//       [userId]
+//     );
+
+//     if (reservations.length < 2) {
+//       return res.status(400).json({ message: 'Not enough reservation history to make a suggestion' });
+//     }
+
+//     // Prepare data for the Python script
+//     const reservationData = reservations.map(r => ({
+//       psychologist: r.psychologist_id,
+//       day: r.day,
+//       time: r.time,
+//       duration: r.duration,
+//       date: r.reservation_date.toISOString(),
+//       timeSlot: r.time  // Assuming time is the time slot
+//     }));
+
+//     // Run Python script
+//     const pythonProcess = spawn(pythonExec, ['./ai/decision_tree.py', JSON.stringify(reservationData)]);
+
+//     pythonProcess.on('error', (error) => {
+//       console.error(`Error spawning Python process: ${error}`);
+//       res.status(500).json({ error: 'Failed to get suggestion' });
+//     });
+
+//     let result = '';
+//     pythonProcess.stdout.on('data', (data) => {
+//       result += data.toString();
+//     });
+
+//     pythonProcess.stderr.on('data', (data) => {
+//       console.error(`Python Error: ${data}`);
+//     });
+
+//     pythonProcess.on('close', (code) => {
+//       if (code !== 0) {
+//         return res.status(500).json({ error: 'Failed to get suggestion' });
+//       }
+//       const suggestion = JSON.parse(result);
+//       res.json(suggestion);
+//     });
+
+//   } catch (error) {
+//     console.error('Error getting reservation suggestion:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 app.listen(PORT, () => {
   console.log("Server started on port 5000");
