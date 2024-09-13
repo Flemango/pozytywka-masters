@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
-import { format, isSameDay, parseISO, addHours, isWithinInterval, parse, isBefore } from 'date-fns';
+import { format, isSameDay, parseISO, addHours, isWithinInterval, parse, isBefore, isAfter, startOfDay } from 'date-fns';
 import { LanguageContext } from '../context/LanguageContext';
 import axios from 'axios';
 
@@ -76,11 +76,15 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
         return { start, end };
       });
 
+      const now = new Date();
+      const isToday = isSameDay(date, now);
+      const oneHourFromNow = addHours(now, 1);
+
       const timesAvailable = allTimes.filter(time => {
         const timeSlot = parse(`${format(date, 'yyyy-MM-dd')} ${time}`, 'yyyy-MM-dd HH:mm', new Date());
         return !reservedIntervals.some(interval => 
           isWithinInterval(timeSlot, { start: interval.start, end: interval.end })
-        );
+        ) && (!isToday || isAfter(timeSlot, oneHourFromNow));
       });
 
       setAvailableTimes(timesAvailable);
@@ -92,6 +96,9 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
   const isDateDisabled = ({ date }) => {
     if (!selectedPsychologist) return true;
     
+    const now = new Date();
+    if (isBefore(date, startOfDay(now))) return true;
+
     const dayOfWeek = format(date, 'EEEE');
     const dayHours = workingHours[selectedPsychologist]?.[dayOfWeek] || [];
     if (dayHours.length === 0) return true;
@@ -135,6 +142,7 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
         onChange={setDate}
         value={date}
         tileDisabled={isDateDisabled}
+        minDate={new Date()}
       />
       <div className={selectedTime ? "duration-options" : "available-times"}>
         <h3>
