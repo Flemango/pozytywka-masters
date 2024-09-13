@@ -146,9 +146,22 @@ module.exports = (db) => {
   
         const reservation = reservations[0];
         const currentDate = new Date(reservation.reservation_date);
-        currentDate.setDate(currentDate.getDate() + parseInt(direction));
+
+        // Extract the time part
+        const hours = currentDate.getHours().toString().padStart(2, '0');
+        const minutes = currentDate.getMinutes().toString().padStart(2, '0');
+        const seconds = currentDate.getSeconds().toString().padStart(2, '0');
+        const timePart = `${hours}:${minutes}:${seconds}`;
+
+        currentDate.setDate(currentDate.getDate() + direction);
+
+        // Format the new date
+        const year = currentDate.getFullYear();
+        const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = currentDate.getDate().toString().padStart(2, '0');
+        const newDate = `${year}-${month}-${day} ${timePart}`;
         
-        const newDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
+        //const newDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
   
         // Update the reservation
         await connection.execute(
