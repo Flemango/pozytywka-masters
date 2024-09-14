@@ -14,6 +14,7 @@ function ReservationPanel() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState(null);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [captcha, setCaptcha] = useState('');
@@ -43,6 +44,7 @@ function ReservationPanel() {
       reserve: 'Reserve',
       confirmation: 'Reservation confirmed for',
       invalidDateTime: 'The selected date or time is not available. Please choose from the calendar.',
+      suggestReservation: 'Suggest Reservation',
     },
     PL: {
       title: 'Zarezerwuj spotkanie',
@@ -57,6 +59,7 @@ function ReservationPanel() {
       reserve: 'Rezerwuj',
       confirmation: 'Rezerwacja potwierdzona dla',
       invalidDateTime: 'Wybrana data lub godzina jest niedostępna. Proszę wybrać z kalendarza.',
+      suggestReservation: 'Zaproponuj Rezerwację',
     }
   };
 
@@ -94,6 +97,7 @@ function ReservationPanel() {
             setFirstName(savedUserData.firstName);
             setLastName(savedUserData.lastName);
             setEmail(savedUserData.email);
+            setUserId(savedUserData.id);
             setIsLoggedIn(true);
           }
         }
@@ -103,6 +107,7 @@ function ReservationPanel() {
             setFirstName(userData.firstName);
             setLastName(userData.lastName);
             setEmail(userData.email);
+            setUserId(userData.id);
             setIsLoggedIn(true);
           }
         }
@@ -143,6 +148,38 @@ function ReservationPanel() {
     setDate(formattedDate);
     setTime(selectedTime);
     setDuration(selectedDuration);
+  };
+
+  const handleSuggestReservation = async () => {
+    if (!userId || !selectedPsychologist) {
+      return;
+    }
+
+    const token = localStorage.getItem('userAccessToken') || sessionStorage.getItem('userAccessToken');
+
+    try {
+      const response = await Axios.post('http://localhost:5000/suggest-reservation', 
+        { userId: userId, psychologistId: selectedPsychologist },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data && response.data.suggestedDate) {
+        const suggestedDate = new Date(response.data.suggestedDate);
+        setSelectedDate(format(suggestedDate, 'yyyy-MM-dd'));
+        setDate(format(suggestedDate, 'yyyy-MM-dd'));
+        setMessage('Suggested date: ' + format(suggestedDate, 'yyyy-MM-dd'));
+        
+        // Scroll to the calendar
+        if (calendarRef.current) {
+          calendarRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        setMessage('No suggestion available. Please choose a date manually.');
+      }
+    } catch (error) {
+      console.error('Error getting reservation suggestion:', error);
+      setMessage(translations[language].suggestionError);
+    }
   };
 
   const getDisplayTime = () => {
@@ -307,7 +344,14 @@ function ReservationPanel() {
               <LoadCanvasTemplateNoReload />
               </label>
             </div>
-            <button type="submit">{translations[language].reserve}</button>
+            <div className="button-container">
+              {isLoggedIn && selectedPsychologist && (
+                  <button type="button" className="suggest-btn" onClick={handleSuggestReservation}>
+                    {translations[language].suggestReservation}
+                  </button>
+              )}
+              <button type="submit">{translations[language].reserve}</button>
+            </div>
           </form>
           {message && <p className="confirmation-message">{message}</p>}
         </div>

@@ -252,3 +252,12 @@ input::placeholder {
   opacity: 0.3;
   color: gray;
 }
+
+.suggest-btn {
+  background-color: rgb(217, 217, 93) !important;
+  margin-right: 16px !important;
+}
+
+.suggest-btn:hover {
+  background-color: rgb(207, 207, 108) !important;
+}

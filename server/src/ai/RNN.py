@@ -292,9 +292,11 @@ def load_and_test_model():
         prediction = predict_next(loaded_model, seq)
         print(f"Sequence: {seq}, Predicted next: {prediction}")
 
-# Uncomment the following line to train and save the model (run only once)
 #train_and_save_model()
 #additional_learning(epochs=500)
+#load_and_test_model()
 
-# Use this line to load the saved model and make predictions
-load_and_test_model()
+sequence = [int(arg) for arg in sys.argv[1:]]
+loaded_model = load_saved_model()
+prediction = predict_next(loaded_model, sequence)
+print(prediction)
