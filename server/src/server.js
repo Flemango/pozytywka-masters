@@ -8,11 +8,8 @@ const cors = require("cors")
 const jwt = require("jsonwebtoken")
 const nodemailer = require('nodemailer');
 const { addDays, parseISO, format } = require('date-fns');
-
 const { spawn } = require('child_process');
 const path = require('path');
-const pythonExecutable = path.join('myenv', 'Scripts', 'python.exe');
-const testScript = path.join('.', 'src', 'ai', 'RNN.py');
 
 const db = require('./db');
 const adminRoutes = require('./routes/adminRoutes')(db);
@@ -22,6 +19,21 @@ app.use(cors({origin: '*'}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true })) //przesylanie formularzami
 
+const pythonExecutable = path.join('myenv', 'Scripts', 'python.exe');
+const NNScript = path.join('.', 'src', 'ai', 'NN_LSTM.py');
+const DTScript = path.join('.', 'src', 'ai', 'decisionTree.py');
+
+const pythonProcess = spawn(pythonExecutable, [NNScript]);
+
+pythonProcess.stdout.on('data', (data) => {
+  console.log(`${data}`);
+});
+pythonProcess.stderr.on('data', (data) => {
+  console.error(`Python stderr: ${data}`);
+});
+pythonProcess.on('close', (code) => {
+  console.log(`Python process exited with code ${code}`);
+});
 
 let secretKey = process.env.ACCESS_TOKEN_SECRET;
 let expirationTime = '10m';
@@ -363,31 +375,21 @@ app.delete('/delete-account', authenticateToken, async (req, res) => {
   }
 });
 
-const runPythonScript = (scriptPath, args) => {
+function predictNextInterval(sequence) {
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn(pythonExecutable, [scriptPath, ...args]);
-    let pythonOutput = '';
-    let pythonError = '';
-
-    pythonProcess.stdout.on('data', (data) => {
-      pythonOutput = data;
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-      pythonError += data.toString();
-    });
-
-    pythonProcess.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Python process exited with code ${code}\n${pythonError}`));
+    pythonProcess.stdin.write(JSON.stringify(sequence) + '\n');
+    
+    const handleOutput = (data) => {
+      const response = JSON.parse(data.toString());
+      if (response.error) {
+        reject(new Error(response.error));
       } else {
-        resolve(pythonOutput.toString().trim());
+        resolve(response.prediction);
       }
-    });
+      pythonProcess.stdout.removeListener('data', handleOutput);
+    };
 
-    pythonProcess.on('error', (error) => {
-      reject(new Error(`Error spawning Python process: ${error}`));
-    });
+    pythonProcess.stdout.on('data', handleOutput);
   });
 }
 
@@ -422,13 +424,23 @@ app.post('/suggest-reservation', authenticateToken, async (req, res) => {
     }
     console.log(daysBetween);
 
-    // Spawn Python process
-    const pythonOutput = await runPythonScript(testScript, daysBetween.map(String));
+    const pythonOutput = await predictNextInterval(daysBetween);
     
     const suggestedInterval = parseInt(pythonOutput);
     const mostRecentReservation = new Date(reservations[0].reservation_date);
-    mostRecentReservation.setHours(0, 0, 0, 0); // Reset time to midnight
+    mostRecentReservation.setHours(0, 0, 0, 0);
     const suggestedDate = addDays(mostRecentReservation, suggestedInterval);
+
+    // const decisionTree = spawn(pythonExecutable, [DTScript]);
+    // decisionTree.stdout.on('data', (data) => {
+    //   console.log(`${data}`);
+    // });
+    // decisionTree.stderr.on('data', (data) => {
+    //   console.error(`Python stderr: ${data}`);
+    // });
+    // decisionTree.on('close', (code) => {
+    //   console.log(`Python process exited with code ${code}`);
+    // });
 
     res.json({ suggestedDate: format(suggestedDate, 'yyyy-MM-dd') });
   } catch (error) {
@@ -436,7 +448,6 @@ app.post('/suggest-reservation', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Error suggesting reservation' });
   }
 });
-
 
 ///
 app.use('/admin', authenticateToken, adminRoutes);
@@ -447,3 +458,9 @@ app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
 app.listen(PORT, () => {
   console.log("Server started on port 5000");
 })
+
+// Handle server shutdown
+process.on('SIGINT', () => {
+  pythonProcess.kill('SIGINT');
+  process.exit();
+});
