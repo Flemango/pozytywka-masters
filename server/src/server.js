@@ -399,7 +399,7 @@ app.post('/suggest-reservation', authenticateToken, async (req, res) => {
   try {
     // Fetch user's reservations
     const [reservations] = await db.execute(
-      'SELECT reservation_date FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date DESC',
+      'SELECT reservation_date, duration FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date DESC',
       [userId, psychologistId]
     );
 
@@ -431,18 +431,52 @@ app.post('/suggest-reservation', authenticateToken, async (req, res) => {
     mostRecentReservation.setHours(0, 0, 0, 0);
     const suggestedDate = addDays(mostRecentReservation, suggestedInterval);
 
-    // const decisionTree = spawn(pythonExecutable, [DTScript]);
-    // decisionTree.stdout.on('data', (data) => {
-    //   console.log(`${data}`);
-    // });
-    // decisionTree.stderr.on('data', (data) => {
-    //   console.error(`Python stderr: ${data}`);
-    // });
-    // decisionTree.on('close', (code) => {
-    //   console.log(`Python process exited with code ${code}`);
-    // });
+    // Prepare data for decision tree script
+    const reservationHistory = reservations.map(r => ({
+      date: format(new Date(r.reservation_date), 'yyyy-MM-dd'),
+      time: format(new Date(r.reservation_date), 'HH:mm'),
+      duration: `${r.duration}h`
+    }));
+    // console.log(reservationHistory)
 
-    res.json({ suggestedDate: format(suggestedDate, 'yyyy-MM-dd') });
+    const inputData = {
+      reservations: reservationHistory,
+      predicted_day: suggestedDate.getDay() // 1 for Sunday, 2 for Monday, etc.
+    };
+
+    // Run decision tree script
+    const decisionTreeProcess = spawn(pythonExecutable, [DTScript]);
+    let outputData = '';
+
+    decisionTreeProcess.stdin.write(JSON.stringify(inputData));
+    decisionTreeProcess.stdin.end();
+
+    decisionTreeProcess.stdout.on('data', (data) => {
+      outputData += data.toString();
+      // console.log(outputData)
+    });
+
+    decisionTreeProcess.stderr.on('data', (data) => {
+      console.error(`Python stderr: ${data}`);
+    });
+
+    await new Promise((resolve, reject) => {
+      decisionTreeProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Python process exited with code ${code}`));
+        }
+      });
+    });
+
+    const prediction = JSON.parse(outputData);
+
+    res.json({ 
+      suggestedDate: format(suggestedDate, 'yyyy-MM-dd'),
+      suggestedTime: prediction.predicted_time,
+      suggestedDuration: prediction.predicted_duration
+    });
   } catch (error) {
     console.error('Error suggesting reservation:', error);
     res.status(500).json({ message: 'Error suggesting reservation' });

@@ -27,6 +27,8 @@ function ReservationPanel() {
   const [psychologists, setPsychologists] = useState([]);
   const [workingHours, setWorkingHours] = useState({});
   const [duration, setDuration] = useState(1); // Default to 1 hour
+  const [isWaitingForSuggestion, setIsWaitingForSuggestion] = useState(false);
+  const [hasSuggestion, setHasSuggestion] = useState(false);
   const navigate = useNavigate();
   const calendarRef = useRef(null);
 
@@ -45,6 +47,9 @@ function ReservationPanel() {
       confirmation: 'Reservation confirmed for',
       invalidDateTime: 'The selected date or time is not available. Please choose from the calendar.',
       suggestReservation: 'Suggest Reservation',
+      pleaseWait: 'Please Wait...',
+      suggestionError: 'Error getting suggestion. Please try again.',
+      suggestionMessage: 'Suggested appointment: ',
     },
     PL: {
       title: 'Zarezerwuj spotkanie',
@@ -60,6 +65,9 @@ function ReservationPanel() {
       confirmation: 'Rezerwacja potwierdzona dla',
       invalidDateTime: 'Wybrana data lub godzina jest niedostępna. Proszę wybrać z kalendarza.',
       suggestReservation: 'Zaproponuj Rezerwację',
+      pleaseWait: 'Proszę czekać...',
+      suggestionError: 'Błąd podczas pobierania sugestii. Spróbuj ponownie.',
+      suggestionMessage: 'Propozycja rezerwacji: ',
     }
   };
 
@@ -155,6 +163,7 @@ function ReservationPanel() {
       return;
     }
 
+    setIsWaitingForSuggestion(true);
     const token = localStorage.getItem('userAccessToken') || sessionStorage.getItem('userAccessToken');
 
     try {
@@ -167,7 +176,11 @@ function ReservationPanel() {
         const suggestedDate = new Date(response.data.suggestedDate);
         setSelectedDate(format(suggestedDate, 'yyyy-MM-dd'));
         setDate(format(suggestedDate, 'yyyy-MM-dd'));
-        setMessage('Suggested date: ' + format(suggestedDate, 'yyyy-MM-dd'));
+        setSelectedTime(response.data.suggestedTime);
+        setTime(response.data.suggestedTime);
+        setDuration(response.data.suggestedDuration.replace('h', ''));
+        setMessage(`${translations[language].suggestionMessage}${format(suggestedDate, 'yyyy-MM-dd')} ${response.data.suggestedTime} ${response.data.suggestedDuration}`);
+        setHasSuggestion(true);
         
         // Scroll to the calendar
         if (calendarRef.current) {
@@ -179,6 +192,8 @@ function ReservationPanel() {
     } catch (error) {
       console.error('Error getting reservation suggestion:', error);
       setMessage(translations[language].suggestionError);
+    } finally {
+      setIsWaitingForSuggestion(false);
     }
   };
 
@@ -345,11 +360,19 @@ function ReservationPanel() {
               </label>
             </div>
             <div className="button-container">
-              {isLoggedIn && selectedPsychologist && (
-                  <button type="button" className="suggest-btn" onClick={handleSuggestReservation}>
-                    {translations[language].suggestReservation}
-                  </button>
-              )}
+            {isLoggedIn && selectedPsychologist && !hasSuggestion && (
+              <button 
+                type="button" 
+                className="suggest-btn" 
+                onClick={handleSuggestReservation}
+                disabled={isWaitingForSuggestion}
+              >
+                {isWaitingForSuggestion 
+                  ? translations[language].pleaseWait
+                  : translations[language].suggestReservation
+                }
+              </button>
+            )}
               <button type="submit">{translations[language].reserve}</button>
             </div>
           </form>
