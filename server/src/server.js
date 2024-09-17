@@ -7,9 +7,11 @@ const bcrypt = require("bcryptjs")
 const cors = require("cors")
 const jwt = require("jsonwebtoken")
 const nodemailer = require('nodemailer');
-const { addDays, parseISO, format } = require('date-fns');
+const { addDays, addHours, parseISO, format, isWithinInterval } = require('date-fns');
 const { spawn } = require('child_process');
 const path = require('path');
+const moment = require('moment-timezone');
+const localTimezone = 'Europe/Warsaw';
 
 const db = require('./db');
 const adminRoutes = require('./routes/adminRoutes')(db);
@@ -245,7 +247,14 @@ app.get('/get-reservations', async (req, res) => {
       [psychologistId, date]
     );
 
-    res.json(reservations);
+    // Convert UTC times to local timezone
+    const adjustedReservations = reservations.map(reservation => ({
+      ...reservation,
+      reservation_date: moment.utc(reservation.reservation_date).tz(localTimezone).format()
+    }));
+
+    //console.log(adjustedReservations);
+    res.json(adjustedReservations);
   } catch (error) {
     console.error('Error fetching reservations:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -254,7 +263,6 @@ app.get('/get-reservations', async (req, res) => {
 
 app.post('/create-reservation', async (req, res) => {
   const { firstName, lastName, email, psychologistId, date, time, duration } = req.body;
-  //const duration = 1; // Default 1 hour reservation
 
   try {
     // Check if client exists
@@ -283,11 +291,35 @@ app.post('/create-reservation', async (req, res) => {
       roomId = psychologistResult[0].preferred_room_id;
     }
 
-    // Create the reservation
+    // Check for colliding reservations
     const reservationDate = `${date} ${time}`;
+    const proposedStart = parseISO(reservationDate);
+    const proposedEnd = addHours(proposedStart, parseInt(duration));
+
+    const [existingReservations] = await db.execute(
+      'SELECT reservation_date, duration FROM reservations WHERE psychologist_id = ? AND DATE(reservation_date) = DATE(?)',
+      [psychologistId, reservationDate]
+    );
+
+    for (const reservation of existingReservations) {
+      // Convert the date to a string format that parseISO can handle
+      const existingDateString = format(new Date(reservation.reservation_date), "yyyy-MM-dd'T'HH:mm:ss");
+      const existingStart = parseISO(existingDateString);
+      const existingEnd = addHours(existingStart, reservation.duration);
+
+      if (
+        isWithinInterval(proposedStart, { start: existingStart, end: existingEnd }) ||
+        isWithinInterval(proposedEnd, { start: existingStart, end: existingEnd }) ||
+        isWithinInterval(existingStart, { start: proposedStart, end: proposedEnd })
+      ) {
+        return res.status(409).json({ message: 'This time slot conflicts with an existing reservation' });
+      }
+    }
+
+    // Create the reservation
     const [reservationResult] = await db.execute(
       'INSERT INTO reservations (client_id, psychologist_id, room_id, reservation_date, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [clientId, psychologistId, roomId, reservationDate, duration, 'Pending'] // Assuming room_id 1 for now
+      [clientId, psychologistId, roomId, reservationDate, duration, 'Pending']
     );
 
     if (reservationResult.affectedRows > 0) {
@@ -300,7 +332,6 @@ app.post('/create-reservation', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 ///
 const authenticateToken = (req, res, next) => {

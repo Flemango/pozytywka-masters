@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './ReservationCalendar.css';
-import { format, isSameDay, parseISO, addHours, isWithinInterval, parse, isBefore, isAfter, startOfDay } from 'date-fns';
+import { format, isSameDay, parseISO, addHours, addMinutes, isWithinInterval, parse, isBefore, isAfter, startOfDay } from 'date-fns';
 import { LanguageContext } from '../context/LanguageContext';
 import axios from 'axios';
 
@@ -72,7 +72,8 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
 
       const reservedIntervals = reservations.map(reservation => {
         const start = new Date(`${reservation.reservation_date}`);
-        const end = addHours(start, reservation.duration);
+        const temp = addHours(start, reservation.duration);
+        const end = addMinutes(temp, -1);
         return { start, end };
       });
 
@@ -119,12 +120,25 @@ const ReservationCalendar = ({ onTimeSelect, selectedPsychologist, workingHours 
 
   const handleTimeClick = (time) => {
     setSelectedTime(time);
-    const dayOfWeek = format(date, 'EEEE');
-    const dayHours = workingHours[selectedPsychologist]?.[dayOfWeek] || [];
-    const endTime = parse(dayHours[dayHours.length - 1].end, 'HH:mm', new Date());
-    const selectedDateTime = parse(time, 'HH:mm', new Date());
-    const hoursUntilEnd = Math.floor((endTime.getTime() - selectedDateTime.getTime()) / (1000 * 60 * 60));
-    setAvailableDurations(Array.from({length: Math.min(hoursUntilEnd, 3)}, (_, i) => i + 1));
+    
+    // Find the index of the selected time in availableTimes
+    const selectedIndex = availableTimes.indexOf(time);
+    
+    // Count consecutive available hours after the selected time
+    let consecutiveHours = 0;
+    for (let i = selectedIndex; i < availableTimes.length; i++) {
+      if (i === selectedIndex || 
+          parse(availableTimes[i], 'HH:mm', new Date()).getHours() === 
+          parse(availableTimes[i-1], 'HH:mm', new Date()).getHours() + 1) {
+        consecutiveHours++;
+      } else {
+        break;
+      }
+    }
+
+    // Limit available durations to avoid collisions
+    const maxDuration = Math.min(consecutiveHours, 3);
+    setAvailableDurations(Array.from({length: maxDuration}, (_, i) => i + 1));
   };
 
   const handleDurationSelect = (duration) => {

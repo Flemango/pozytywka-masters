@@ -50,6 +50,13 @@ function ReservationPanel() {
       pleaseWait: 'Please Wait...',
       suggestionError: 'Error getting suggestion. Please try again.',
       suggestionMessage: 'Suggested appointment: ',
+      reservationFailed: 'Reservation failed. Please try again.',
+      invalidRequest: 'Invalid reservation request. Please check your input and try again.',
+      conflictingReservation: 'This time slot is no longer available. Please choose a different time.',
+      serverError: 'A server error occurred. Please try again later.',
+      unknownError: 'An unknown error occurred. Please try again.',
+      networkError: 'Unable to connect to the server. Please check your internet connection and try again.',
+      captchaError: 'Captcha verification failed. Please try again.',
     },
     PL: {
       title: 'Zarezerwuj spotkanie',
@@ -68,6 +75,13 @@ function ReservationPanel() {
       pleaseWait: 'Proszę czekać...',
       suggestionError: 'Błąd podczas pobierania sugestii. Spróbuj ponownie.',
       suggestionMessage: 'Propozycja rezerwacji: ',
+      reservationFailed: 'Rezerwacja nie powiodła się. Proszę spróbować ponownie.',
+      invalidRequest: 'Nieprawidłowe żądanie rezerwacji. Sprawdź wprowadzone dane i spróbuj ponownie.',
+      conflictingReservation: 'Ten termin nie jest już dostępny. Proszę wybrać inny czas.',
+      serverError: 'Wystąpił błąd serwera. Proszę spróbować później.',
+      unknownError: 'Wystąpił nieznany błąd. Proszę spróbować ponownie.',
+      networkError: 'Nie można połączyć się z serwerem. Sprawdź połączenie internetowe i spróbuj ponownie.',
+      captchaError: 'Weryfikacja Captcha nie powiodła się. Proszę spróbować ponownie.',
     }
   };
 
@@ -221,29 +235,47 @@ function ReservationPanel() {
   
           if (response.status === 201) {
             navigate('/confirmation', { 
-                state: { 
-                    reservationDetails: {
-                        firstName,
-                        lastName,
-                        email,
-                        date,
-                        time,
-                        duration
-                    } 
+              state: { 
+                reservationDetails: {
+                  firstName,
+                  lastName,
+                  email,
+                  date,
+                  time,
+                  duration
                 } 
+              } 
             });
           } else {
-            setMessage('Reservation failed. Please try again.');
+            setMessage(translations[language].reservationFailed);
           }
         } catch (error) {
           console.error('Error creating reservation:', error);
-          setMessage('An error occurred. Please try again.');
+          if (error.response) {
+            switch (error.response.status) {
+              case 400:
+                setMessage(translations[language].invalidRequest);
+                break;
+              case 409:
+                setMessage(translations[language].conflictingReservation);
+                break;
+              case 500:
+                setMessage(translations[language].serverError);
+                break;
+              default:
+                setMessage(translations[language].unknownError);
+            }
+          } else if (error.request) {
+            setMessage(translations[language].networkError);
+          } else {
+            setMessage(translations[language].unknownError);
+          }
         }
       } else {
         setMessage(translations[language].invalidDateTime);
       }
     } else {
-      setMessage('Captcha Does Not Match');
+      setMessage(translations[language].captchaError);
     }
   };
 
