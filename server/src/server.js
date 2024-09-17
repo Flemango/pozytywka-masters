@@ -7,7 +7,7 @@ const bcrypt = require("bcryptjs")
 const cors = require("cors")
 const jwt = require("jsonwebtoken")
 const nodemailer = require('nodemailer');
-const { addDays, addHours, parseISO, format, isWithinInterval } = require('date-fns');
+const { format, parseISO, addHours, addDays, isWithinInterval, isBefore, isAfter, setHours, setMinutes } = require('date-fns');
 const { spawn } = require('child_process');
 const path = require('path');
 const moment = require('moment-timezone');
@@ -424,18 +424,188 @@ function predictNextInterval(sequence) {
   });
 }
 
+async function getDecisionTreePrediction(reservationHistory, predictedDay) {
+  return new Promise((resolve, reject) => {
+    const decisionTreeProcess = spawn(pythonExecutable, [DTScript]);
+    let outputData = '';
+
+    decisionTreeProcess.stdin.write(JSON.stringify({ reservations: reservationHistory, predicted_day: predictedDay }));
+    decisionTreeProcess.stdin.end();
+
+    decisionTreeProcess.stdout.on('data', (data) => {
+      outputData += data.toString();
+    });
+
+    decisionTreeProcess.stderr.on('data', (data) => {
+      console.error(`Python stderr: ${data}`);
+    });
+
+    decisionTreeProcess.on('close', (code) => {
+      if (code === 0) {
+        resolve(JSON.parse(outputData));
+      } else {
+        reject(new Error(`Python process exited with code ${code}`));
+      }
+    });
+  });
+}
+
+async function findAvailableSlot(suggestedDate, suggestedTime, suggestedDuration, psychologistId) {
+  // Fetch psychologist's working hours for the suggested day
+  const dayOfWeek = suggestedDate.getDay();
+  const [workingHours] = await db.execute(
+    'SELECT start_time, end_time FROM psychologist_working_hours WHERE psychologist_id = ? AND day_of_week = ?',
+    [psychologistId, dayOfWeek]
+  );
+
+  if (workingHours.length === 0) {
+    // Psychologist doesn't work on this day
+    return null;
+  }
+
+  const workStart = parseISO(`${format(suggestedDate, 'yyyy-MM-dd')}T${workingHours[0].start_time}`);
+  const workEnd = parseISO(`${format(suggestedDate, 'yyyy-MM-dd')}T${workingHours[0].end_time}`);
+
+  // Fetch existing reservations for the suggested date
+  const [existingReservations] = await db.execute(
+    'SELECT reservation_date, duration FROM reservations WHERE psychologist_id = ? AND DATE(reservation_date) = ?',
+    [psychologistId, format(suggestedDate, 'yyyy-MM-dd')]
+  );
+
+  // Convert suggested time to Date object
+  let suggestedDateTime = parseISO(`${format(suggestedDate, 'yyyy-MM-dd')}T${suggestedTime}`);
+  let suggestedEndTime = addHours(suggestedDateTime, parseInt(suggestedDuration));
+
+  // Ensure suggested time is within working hours
+  if (isBefore(suggestedDateTime, workStart)) {
+    suggestedDateTime = workStart;
+    suggestedEndTime = addHours(suggestedDateTime, parseInt(suggestedDuration));
+  }
+
+  if (isAfter(suggestedEndTime, workEnd)) {
+    return null; // Suggested time is outside working hours
+  }
+
+  // Check for collisions
+  const collision = existingReservations.some(reservation => {
+    const reservationStart = new Date(reservation.reservation_date);
+    const reservationEnd = addHours(reservationStart, reservation.duration);
+    return isWithinInterval(suggestedDateTime, { start: reservationStart, end: reservationEnd }) ||
+           isWithinInterval(suggestedEndTime, { start: reservationStart, end: reservationEnd }) ||
+           isWithinInterval(reservationStart, { start: suggestedDateTime, end: suggestedEndTime });
+  });
+
+  if (!collision) {
+    return { 
+      suggestedDate: format(suggestedDateTime, 'yyyy-MM-dd'), 
+      suggestedTime: format(suggestedDateTime, 'HH:mm'), 
+      suggestedDuration 
+    };
+  }
+
+  // Find the next available time slot
+  let nextAvailableTime = suggestedDateTime;
+  let availableDuration = parseInt(suggestedDuration);
+
+  while (isBefore(nextAvailableTime, workEnd)) {
+    nextAvailableTime = addHours(nextAvailableTime, 1);
+    const nextEndTime = addHours(nextAvailableTime, availableDuration);
+
+    if (isAfter(nextEndTime, workEnd)) {
+      // If next end time is after work end, try reducing duration
+      availableDuration--;
+      if (availableDuration === 0) {
+        // No available slot found for this day
+        return null;
+      }
+      continue;
+    }
+
+    const isAvailable = !existingReservations.some(reservation => {
+      const reservationStart = new Date(reservation.reservation_date);
+      const reservationEnd = addHours(reservationStart, reservation.duration);
+      return isWithinInterval(nextAvailableTime, { start: reservationStart, end: reservationEnd }) ||
+             isWithinInterval(nextEndTime, { start: reservationStart, end: reservationEnd });
+    });
+
+    if (isAvailable) {
+      return {
+        suggestedDate: format(nextAvailableTime, 'yyyy-MM-dd'),
+        suggestedTime: format(nextAvailableTime, 'HH:mm'),
+        suggestedDuration: `${availableDuration}h`
+      };
+    }
+  }
+
+  // No available slot found for this day
+  return null;
+}
+
+async function suggestReservation(userId, psychologistId, daysBetween) {
+  const pythonOutput = await predictNextInterval(daysBetween);
+  const suggestedInterval = parseInt(pythonOutput);
+  
+  // Fetch the most recent reservation
+  const [recentReservations] = await db.execute(
+    'SELECT reservation_date FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date DESC LIMIT 1',
+    [userId, psychologistId]
+  );
+  
+  if (recentReservations.length === 0) {
+    throw new Error('No recent reservations found');
+  }
+
+  let mostRecentReservation = new Date(recentReservations[0].reservation_date);
+  mostRecentReservation.setHours(0, 0, 0, 0);
+  let suggestedDate = addDays(mostRecentReservation, suggestedInterval);
+
+  // Fetch reservation history for decision tree
+  const [reservations] = await db.execute(
+    'SELECT reservation_date, duration FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date DESC',
+    [userId, psychologistId]
+  );
+
+  const reservationHistory = reservations.map(r => ({
+    date: format(new Date(r.reservation_date), 'yyyy-MM-dd'),
+    time: format(new Date(r.reservation_date), 'HH:mm'),
+    duration: `${r.duration}h`
+  }));
+
+  let availableSlot = null;
+  let attempts = 0;
+  const maxAttempts = 7; // Try for a week max
+
+  while (!availableSlot && attempts < maxAttempts) {
+    const prediction = await getDecisionTreePrediction(reservationHistory, suggestedDate.getDay());
+    availableSlot = await findAvailableSlot(suggestedDate, prediction.predicted_time, prediction.predicted_duration, psychologistId);
+
+    if (!availableSlot) {
+      // No available slot found, try the next day
+      suggestedDate = addDays(suggestedDate, 1);
+      attempts++;
+    }
+  }
+
+  if (availableSlot) {
+    return availableSlot;
+  } else {
+    // If no slot found after a week, add suggested interval to daysBetween and try again
+    daysBetween.push(suggestedInterval);
+    return suggestReservation(userId, psychologistId, daysBetween);
+  }
+}
+
 app.post('/suggest-reservation', authenticateToken, async (req, res) => {
   const { userId, psychologistId } = req.body;
 
   try {
     // Fetch user's reservations
     const [reservations] = await db.execute(
-      'SELECT reservation_date, duration FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date DESC',
+      'SELECT reservation_date FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date ASC',
       [userId, psychologistId]
     );
 
     if (reservations.length < 2) {
-      // Not enough data to make a suggestion
       return res.json({ message: 'Not enough past reservations to make a suggestion.' });
     }
 
@@ -444,81 +614,122 @@ app.post('/suggest-reservation', authenticateToken, async (req, res) => {
     for (let i = 1; i < reservations.length; i++) {
       const prevDate = new Date(reservations[i-1].reservation_date);
       const currDate = new Date(reservations[i].reservation_date);
-
-      // Reset time to midnight for both dates
       prevDate.setHours(0, 0, 0, 0);
       currDate.setHours(0, 0, 0, 0);
-      
       const diffTime = Math.abs(currDate - prevDate);
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
       daysBetween.push(diffDays);
     }
-    console.log(daysBetween);
 
-    const pythonOutput = await predictNextInterval(daysBetween);
-    
-    const suggestedInterval = parseInt(pythonOutput);
-    const mostRecentReservation = new Date(reservations[0].reservation_date);
-    mostRecentReservation.setHours(0, 0, 0, 0);
-    const suggestedDate = addDays(mostRecentReservation, suggestedInterval);
+    const suggestion = await suggestReservation(userId, psychologistId, daysBetween);
+    // console.log(daysBetween);
 
-    // Prepare data for decision tree script
-    const reservationHistory = reservations.map(r => ({
-      date: format(new Date(r.reservation_date), 'yyyy-MM-dd'),
-      time: format(new Date(r.reservation_date), 'HH:mm'),
-      duration: `${r.duration}h`
-    }));
-    // console.log(reservationHistory)
-
-    const inputData = {
-      reservations: reservationHistory,
-      predicted_day: suggestedDate.getDay() // 1 for Sunday, 2 for Monday, etc.
-    };
-
-    // Run decision tree script
-    const decisionTreeProcess = spawn(pythonExecutable, [DTScript]);
-    let outputData = '';
-
-    decisionTreeProcess.stdin.write(JSON.stringify(inputData));
-    decisionTreeProcess.stdin.end();
-
-    decisionTreeProcess.stdout.on('data', (data) => {
-      outputData += data.toString();
-      // console.log(outputData)
-    });
-
-    decisionTreeProcess.stderr.on('data', (data) => {
-      console.error(`Python stderr: ${data}`);
-    });
-
-    await new Promise((resolve, reject) => {
-      decisionTreeProcess.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Python process exited with code ${code}`));
-        }
-      });
-    });
-
-    const prediction = JSON.parse(outputData);
-
-    res.json({ 
-      suggestedDate: format(suggestedDate, 'yyyy-MM-dd'),
-      suggestedTime: prediction.predicted_time,
-      suggestedDuration: prediction.predicted_duration
-    });
+    if (suggestion) {
+      res.json(suggestion);
+    } else {
+      res.json({ message: 'Unable to find a suitable reservation slot.' });
+    }
   } catch (error) {
     console.error('Error suggesting reservation:', error);
     res.status(500).json({ message: 'Error suggesting reservation' });
   }
 });
 
+// app.post('/suggest-reservation', authenticateToken, async (req, res) => {
+//   const { userId, psychologistId } = req.body;
+
+//   try {
+//     // Fetch user's reservations
+//     const [reservations] = await db.execute(
+//       'SELECT reservation_date, duration FROM reservations WHERE client_id = ? AND psychologist_id = ? ORDER BY reservation_date DESC',
+//       [userId, psychologistId]
+//     );
+
+//     if (reservations.length < 2) {
+//       // Not enough data to make a suggestion
+//       return res.json({ message: 'Not enough past reservations to make a suggestion.' });
+//     }
+
+//     // Calculate days between reservations
+//     let daysBetween = [];
+//     for (let i = 1; i < reservations.length; i++) {
+//       const prevDate = new Date(reservations[i-1].reservation_date);
+//       const currDate = new Date(reservations[i].reservation_date);
+
+//       // Reset time to midnight for both dates
+//       prevDate.setHours(0, 0, 0, 0);
+//       currDate.setHours(0, 0, 0, 0);
+      
+//       const diffTime = Math.abs(currDate - prevDate);
+//       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+//       daysBetween.push(diffDays);
+//     }
+//     console.log(daysBetween);
+
+//     const pythonOutput = await predictNextInterval(daysBetween);
+    
+//     const suggestedInterval = parseInt(pythonOutput);
+//     const mostRecentReservation = new Date(reservations[0].reservation_date);
+//     mostRecentReservation.setHours(0, 0, 0, 0);
+//     const suggestedDate = addDays(mostRecentReservation, suggestedInterval);
+
+//     // Prepare data for decision tree script
+//     const reservationHistory = reservations.map(r => ({
+//       date: format(new Date(r.reservation_date), 'yyyy-MM-dd'),
+//       time: format(new Date(r.reservation_date), 'HH:mm'),
+//       duration: `${r.duration}h`
+//     }));
+//     // console.log(reservationHistory)
+
+//     const inputData = {
+//       reservations: reservationHistory,
+//       predicted_day: suggestedDate.getDay() // 1 for Sunday, 2 for Monday, etc.
+//     };
+
+//     // Run decision tree script
+//     const decisionTreeProcess = spawn(pythonExecutable, [DTScript]);
+//     let outputData = '';
+
+//     decisionTreeProcess.stdin.write(JSON.stringify(inputData));
+//     decisionTreeProcess.stdin.end();
+
+//     decisionTreeProcess.stdout.on('data', (data) => {
+//       outputData += data.toString();
+//       // console.log(outputData)
+//     });
+
+//     decisionTreeProcess.stderr.on('data', (data) => {
+//       console.error(`Python stderr: ${data}`);
+//     });
+
+//     await new Promise((resolve, reject) => {
+//       decisionTreeProcess.on('close', (code) => {
+//         if (code === 0) {
+//           resolve();
+//         } else {
+//           reject(new Error(`Python process exited with code ${code}`));
+//         }
+//       });
+//     });
+
+//     const prediction = JSON.parse(outputData);
+
+//     res.json({ 
+//       suggestedDate: format(suggestedDate, 'yyyy-MM-dd'),
+//       suggestedTime: prediction.predicted_time,
+//       suggestedDuration: prediction.predicted_duration
+//     });
+//   } catch (error) {
+//     console.error('Error suggesting reservation:', error);
+//     res.status(500).json({ message: 'Error suggesting reservation' });
+//   }
+// });
+
 ///
+
 app.use('/admin', authenticateToken, adminRoutes);
 
 app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
-
 
 app.listen(PORT, () => {
   console.log("Server started on port 5000");
