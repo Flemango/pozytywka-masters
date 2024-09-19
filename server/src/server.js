@@ -37,8 +37,9 @@ pythonProcess.on('close', (code) => {
   console.log(`Python process exited with code ${code}`);
 });
 
-let secretKey = process.env.ACCESS_TOKEN_SECRET;
-let expirationTime = '10m';
+const secretKey = process.env.ADMIN_ACCESS_TOKEN_SECRET;
+const userSecretKey = process.env.USER_ACCESS_TOKEN_SECRET;
+const expirationTime = '10m';
 
 const transporter = nodemailer.createTransport({
   service: 'wp.pl',  // Replace with your email service
@@ -133,7 +134,7 @@ app.post('/user-login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid password' });
     }
 
-    const accessToken = jwt.sign({ userId: client.id, isAdmin: false }, secretKey, { expiresIn: expirationTime });
+    const accessToken = jwt.sign({ userId: client.id, isAdmin: false }, userSecretKey, { expiresIn: expirationTime });
 
     res.json({ 
       accessToken, 
@@ -333,7 +334,8 @@ app.post('/create-reservation', async (req, res) => {
   }
 });
 
-///
+
+/// secured admin routes
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -358,7 +360,31 @@ app.post('/refresh', authenticateToken, (req, res) => {
   res.json({ accessToken });
 });
 
-app.post('/change-password', authenticateToken, async (req, res) => {
+app.use('/admin', authenticateToken, adminRoutes);
+
+app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
+
+
+/// secured user routes
+const authenticateUserToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  jwt.verify(token, userSecretKey, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    req.user = user;
+    next();
+  });
+};
+
+app.post('/change-password', authenticateUserToken, async (req, res) => {
   const { userId, newPassword } = req.body;
 
   // Ensure the authenticated user is changing their own password
@@ -383,7 +409,7 @@ app.post('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/delete-account', authenticateToken, async (req, res) => {
+app.delete('/delete-account', authenticateUserToken, async (req, res) => {
   try {
     const { userId } = req.body;
 
@@ -595,7 +621,7 @@ async function suggestReservation(userId, psychologistId, daysBetween) {
   }
 }
 
-app.post('/suggest-reservation', authenticateToken, async (req, res) => {
+app.post('/suggest-reservation', authenticateUserToken, async (req, res) => {
   const { userId, psychologistId } = req.body;
 
   try {
@@ -727,9 +753,6 @@ app.post('/suggest-reservation', authenticateToken, async (req, res) => {
 
 ///
 
-app.use('/admin', authenticateToken, adminRoutes);
-
-app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
 
 app.listen(PORT, () => {
   console.log("Server started on port 5000");
