@@ -65,7 +65,12 @@ function Profile() {
         })
         .catch((error) => {
           console.error('Error fetching user data:', error);
-          navigate('/login'); // If there's an error, redirect to login
+
+          if (error.response && error.response.status === 403) {
+            sessionStorage.removeItem('userAccessToken');
+            localStorage.removeItem('userAccessToken');
+            navigate('/login');
+          }
         });
     }
   }, [navigate]);

@@ -127,12 +127,18 @@ function ReservationPanel() {
           })
           .catch((error) => {
             console.error('Error fetching user data:', error);
+
+            if (error.response && error.response.status === 403) {
+              sessionStorage.removeItem('userAccessToken');
+              localStorage.removeItem('userAccessToken');
+              navigate('/login');
+            }
           });
       }
     };
 
     checkAuth();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     loadCaptchaEnginge(6,'white','#333'); 
