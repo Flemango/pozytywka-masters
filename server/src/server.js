@@ -368,38 +368,60 @@ app.use('/admin-calendar', authenticateToken, adminCalendarRoutes);
 /// secured user routes
 const authenticateUserToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader && authHeader.split(' ')[1]; // Extract the token from Authorization header
 
   if (token == null) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  jwt.verify(token, userSecretKey, (err, user) => {
+  jwt.verify(token, userSecretKey, (err, decodedToken) => {  // decodedToken contains the user info
     if (err) {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    req.user = user;
+    // Add decoded user info (userId, isAdmin) to request object for later use
+    req.user = decodedToken;
     next();
   });
 };
 
-app.post('/change-password', authenticateUserToken, async (req, res) => {
-  const { userId, newPassword } = req.body;
+app.get('/user-profile', authenticateUserToken, async (req, res) => {
+  try {
+    const [clients] = await db.execute(
+      'SELECT id, email, first_name, last_name FROM clients WHERE id = ?',
+      [req.user.userId]
+    );
 
-  // Ensure the authenticated user is changing their own password
-  if (userId !== req.user.userId) {
-    return res.status(403).json({ message: 'You can only change your own password' });
+    if (clients.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const client = clients[0];
+    res.json({ 
+      user: {
+        id: client.id,
+        email: client.email,
+        firstName: client.first_name,
+        lastName: client.last_name,
+      } 
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
+});
+
+app.post('/change-password', authenticateUserToken, async (req, res) => {
+  const { newPassword } = req.body;
 
   try {
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update the password in the database
+    // Update the password in the database using user ID from the JWT
     await db.execute(
       'UPDATE clients SET password = ? WHERE id = ?',
-      [hashedPassword, userId]
+      [hashedPassword, req.user.userId]  // Use userId from JWT (req.user)
     );
 
     res.json({ message: 'Password updated successfully' });
@@ -411,15 +433,8 @@ app.post('/change-password', authenticateUserToken, async (req, res) => {
 
 app.delete('/delete-account', authenticateUserToken, async (req, res) => {
   try {
-    const { userId } = req.body;
-
-    // Ensure the authenticated user is deleting their own account
-    if (userId !== req.user.userId) {
-      return res.status(403).json({ message: 'You can only delete your own account' });
-    }
-
-    // Delete the user from the database
-    const [result] = await db.execute('DELETE FROM clients WHERE id = ?', [userId]);
+    // Delete the user from the database using user ID from the JWT
+    const [result] = await db.execute('DELETE FROM clients WHERE id = ?', [req.user.userId]);  // Use userId from JWT
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'User not found' });
@@ -431,6 +446,7 @@ app.delete('/delete-account', authenticateUserToken, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 function predictNextInterval(sequence) {
   return new Promise((resolve, reject) => {
@@ -753,9 +769,13 @@ app.post('/suggest-reservation', authenticateUserToken, async (req, res) => {
 
 ///
 
+// async function a() {
+//   console.log(await bcrypt.hash("qwerty23", 10))
+// }
 
 app.listen(PORT, () => {
   console.log("Server started on port 5000");
+  //a();
 })
 
 // Handle server shutdown

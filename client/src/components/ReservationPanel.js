@@ -113,26 +113,21 @@ function ReservationPanel() {
         sessionStorage.removeItem('user');
         return;
       } else {
-        if (rememberToken) {
-          const savedUserData = JSON.parse(localStorage.getItem('user'));
-          if (savedUserData) {
-            setFirstName(savedUserData.firstName);
-            setLastName(savedUserData.lastName);
-            setEmail(savedUserData.email);
-            setUserId(savedUserData.id);
+        // Fetch user data from the backend based on the JWT token
+        Axios.get('http://localhost:5000/user-profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((response) => {
+            const user = response.data.user; // Assuming user profile is returned in 'user' object
+            setUserId(user.id);
+            setFirstName(user.email);
+            setLastName(user.lastName);
+            setEmail(user.email);
             setIsLoggedIn(true);
-          }
-        }
-        else {
-          const userData = JSON.parse(sessionStorage.getItem('user'));
-          if (userData) {
-            setFirstName(userData.firstName);
-            setLastName(userData.lastName);
-            setEmail(userData.email);
-            setUserId(userData.id);
-            setIsLoggedIn(true);
-          }
-        }
+          })
+          .catch((error) => {
+            console.error('Error fetching user data:', error);
+          });
       }
     };
 

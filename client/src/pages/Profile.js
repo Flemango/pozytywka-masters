@@ -1,4 +1,3 @@
-// src/components/Profile.js
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
@@ -43,49 +42,54 @@ function Profile() {
   };
 
   useEffect(() => {
-    const rememberToken = localStorage.getItem('userAccessToken');
-    const sessionToken = sessionStorage.getItem('userAccessToken');
+    const token = localStorage.getItem('userAccessToken') || sessionStorage.getItem('userAccessToken');
 
-    if (!rememberToken && !sessionToken) {
+    if (!token) {
       navigate('/login'); // Redirect to login if user is not authenticated
     } else {
-      // Retrieve user data from localStorage or sessionStorage
-      const user = JSON.parse(localStorage.getItem('user')) || JSON.parse(sessionStorage.getItem('user'));
-      if (user) {
-        setUserData({
-            id: user.id,
+      // Remove user data from localStorage or sessionStorage
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
+
+      // Fetch user data from the backend based on the JWT token
+      Axios.get('http://localhost:5000/user-profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((response) => {
+          const user = response.data.user; // Assuming user profile is returned in 'user' object
+          setUserData({
             email: user.email,
             firstName: user.firstName,
-            lastName: user.lastName
+            lastName: user.lastName,
+          });
+        })
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+          navigate('/login'); // If there's an error, redirect to login
         });
-      }
     }
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('userAccessToken');
-    localStorage.removeItem('user');
     sessionStorage.removeItem('userAccessToken');
-    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
   const handleDeleteAccount = async () => {
     const confirmDelete = window.confirm(translations[language].deleteAccountConfirm);
-    
+
     if (confirmDelete) {
       try {
         const token = localStorage.getItem('userAccessToken') || sessionStorage.getItem('userAccessToken');
-        
+
         const response = await Axios.delete('http://localhost:5000/delete-account', {
           headers: { Authorization: `Bearer ${token}` },
-          data: { userId: userData.id } // Send userId in the request body
         });
 
         if (response.status === 200) {
           alert(translations[language].deleteAccountSuccess);
           handleLogout();
-          navigate('/login');
         }
       } catch (error) {
         console.error('Error deleting account:', error);

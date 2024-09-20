@@ -1,4 +1,3 @@
-// src/components/ChangePassword.js
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageContext } from '../context/LanguageContext';
@@ -38,10 +37,9 @@ function ChangePassword() {
   };
 
   useEffect(() => {
-    const rememberToken = localStorage.getItem('userAccessToken');
-    const sessionToken = sessionStorage.getItem('userAccessToken');
+    const token = localStorage.getItem('userAccessToken') || sessionStorage.getItem('userAccessToken');
 
-    if (!rememberToken && !sessionToken) {
+    if (!token) {
       navigate('/login'); // Redirect to login if user is not authenticated
     }
   }, [navigate]);
@@ -92,16 +90,16 @@ function ChangePassword() {
 
     if (Object.keys(errors).length === 0) {
       try {
-        const user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user'));
         const token = sessionStorage.getItem('userAccessToken') || localStorage.getItem('userAccessToken');
 
-        if (!user || !token) {
+        if (!token) {
           navigate('/login');
           return;
         }
 
-        const response = await Axios.post('http://localhost:5000/change-password', 
-          { userId: user.id, newPassword: password },
+        const response = await Axios.post(
+          'http://localhost:5000/change-password',
+          { newPassword: password },
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
