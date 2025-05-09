@@ -1,4 +1,4 @@
-# 🧠 Aplikacja webowa dla gabinetu psychologicznego z modułem uczenia maszynowego w Pythonie.
+# Aplikacja webowa dla gabinetu psychologicznego z modułem uczenia maszynowego w Pythonie
 
 ## Wymagania
 
@@ -6,7 +6,9 @@
 - [Python](https://www.python.org/downloads/)
 - [MySQL](https://dev.mysql.com/downloads/)
 
-## Instalacja
+# Instalacja
+
+## Pobranie dependencies
 
 ```bash
 cd client && npm install
@@ -32,7 +34,7 @@ py -m pip install -r requirements.txt
 
 Struktura bazy danych znajduje się w pliku `db.sql`. Należy uruchomić zawarte tam polecenia SQL, aby utworzyć wymagane tabele przed uruchomieniem aplikacji.
 
-## Uruchomienie
+# Uruchomienie
 
 W dwóch terminalach:
 
