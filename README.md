@@ -8,7 +8,13 @@
 - Express.js
 - React
 - Node.js
+
+Moduł ML:
 - Python Virtual Environment
+
+Zabezpieczenia:
+- JWT Token
+- Bcrypt
 
 ### Wymagane
 
